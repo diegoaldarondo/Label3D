@@ -3,13 +3,12 @@
 Label3D is a GUI for manual labeling of 3D keypoints in multiple cameras.
 
 ## Features
-<ol>
-<li>Simultaneous viewing of any number of camera views</li>
-<li>Multiview triangulation of 3D keypoints</li>
-<li>Point-and-click and draggable gestures to label keypoints</li>
-<li>Zooming, panning, and other default Matlab gestures</li>
-<li>Integration with `Animator` classes</li>
-</ol>
+1. Simultaneous viewing of any number of camera views
+2. Multiview triangulation of 3D keypoints
+3. Point-and-click and draggable gestures to label keypoints
+4. Zooming, panning, and other default Matlab gestures
+5. Integration with `Animator` classes
+
 
 ## Usage
 Requires `Matlab 2019a` or `Matlab 2019b`
