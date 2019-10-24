@@ -12,7 +12,7 @@ Label3D is a GUI for manual labeling of 3D keypoints in multiple cameras.
 </ol>
 
 ## Usage
-Requires `Matlab 2019b`
+Requires `Matlab 2019a` or `Matlab 2019b`
 
 Label3D takes a cell arrays of structs of camera parameters as in
 https://github.com/spoonsso/DANNCE, a cell array of corresponding videos (h,w,c,N),
