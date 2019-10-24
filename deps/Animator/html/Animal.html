@@ -1,0 +1,867 @@
+
+<!DOCTYPE html
+  PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html><head>
+      <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+   <!--
+This HTML was auto-generated from MATLAB code.
+To make changes, update the MATLAB code and republish this document.
+      --><title>Animal</title><meta name="generator" content="MATLAB 9.5"><link rel="schema.DC" href="http://purl.org/dc/elements/1.1/"><meta name="DC.date" content="2018-11-15"><meta name="DC.source" content="Animal.m"><style type="text/css">
+html,body,div,span,applet,object,iframe,h1,h2,h3,h4,h5,h6,p,blockquote,pre,a,abbr,acronym,address,big,cite,code,del,dfn,em,font,img,ins,kbd,q,s,samp,small,strike,strong,sub,sup,tt,var,b,u,i,center,dl,dt,dd,ol,ul,li,fieldset,form,label,legend,table,caption,tbody,tfoot,thead,tr,th,td{margin:0;padding:0;border:0;outline:0;font-size:100%;vertical-align:baseline;background:transparent}body{line-height:1}ol,ul{list-style:none}blockquote,q{quotes:none}blockquote:before,blockquote:after,q:before,q:after{content:'';content:none}:focus{outine:0}ins{text-decoration:none}del{text-decoration:line-through}table{border-collapse:collapse;border-spacing:0}
+
+html { min-height:100%; margin-bottom:1px; }
+html body { height:100%; margin:0px; font-family:Arial, Helvetica, sans-serif; font-size:10px; color:#000; line-height:140%; background:#fff none; overflow-y:scroll; }
+html body td { vertical-align:top; text-align:left; }
+
+h1 { padding:0px; margin:0px 0px 25px; font-family:Arial, Helvetica, sans-serif; font-size:1.5em; color:#d55000; line-height:100%; font-weight:normal; }
+h2 { padding:0px; margin:0px 0px 8px; font-family:Arial, Helvetica, sans-serif; font-size:1.2em; color:#000; font-weight:bold; line-height:140%; border-bottom:1px solid #d6d4d4; display:block; }
+h3 { padding:0px; margin:0px 0px 5px; font-family:Arial, Helvetica, sans-serif; font-size:1.1em; color:#000; font-weight:bold; line-height:140%; }
+
+a { color:#005fce; text-decoration:none; }
+a:hover { color:#005fce; text-decoration:underline; }
+a:visited { color:#004aa0; text-decoration:none; }
+
+p { padding:0px; margin:0px 0px 20px; }
+img { padding:0px; margin:0px 0px 20px; border:none; }
+p img, pre img, tt img, li img, h1 img, h2 img { margin-bottom:0px; } 
+
+ul { padding:0px; margin:0px 0px 20px 23px; list-style:square; }
+ul li { padding:0px; margin:0px 0px 7px 0px; }
+ul li ul { padding:5px 0px 0px; margin:0px 0px 7px 23px; }
+ul li ol li { list-style:decimal; }
+ol { padding:0px; margin:0px 0px 20px 0px; list-style:decimal; }
+ol li { padding:0px; margin:0px 0px 7px 23px; list-style-type:decimal; }
+ol li ol { padding:5px 0px 0px; margin:0px 0px 7px 0px; }
+ol li ol li { list-style-type:lower-alpha; }
+ol li ul { padding-top:7px; }
+ol li ul li { list-style:square; }
+
+.content { font-size:1.2em; line-height:140%; padding: 20px; }
+
+pre, code { font-size:12px; }
+tt { font-size: 1.2em; }
+pre { margin:0px 0px 20px; }
+pre.codeinput { padding:10px; border:1px solid #d3d3d3; background:#f7f7f7; }
+pre.codeoutput { padding:10px 11px; margin:0px 0px 20px; color:#4c4c4c; }
+pre.error { color:red; }
+
+@media print { pre.codeinput, pre.codeoutput { word-wrap:break-word; width:100%; } }
+
+span.keyword { color:#0000FF }
+span.comment { color:#228B22 }
+span.string { color:#A020F0 }
+span.untermstring { color:#B20000 }
+span.syscmd { color:#B28C00 }
+
+.footer { width:auto; padding:10px 0px; margin:25px 0px 0px; border-top:1px dotted #878787; font-size:0.8em; line-height:140%; font-style:italic; color:#878787; text-align:left; float:none; }
+.footer p { margin:0px; }
+.footer a { color:#878787; }
+.footer a:hover { color:#878787; text-decoration:underline; }
+.footer a:visited { color:#878787; }
+
+table th { padding:7px 5px; text-align:left; vertical-align:middle; border: 1px solid #d6d4d4; font-weight:bold; }
+table td { padding:7px 5px; text-align:left; vertical-align:top; border:1px solid #d6d4d4; }
+
+
+
+
+
+  </style></head><body><div class="content"><pre class="codeinput"><span class="keyword">classdef</span> Animal &lt; matlab.mixin.SetGet
+    <span class="comment">% Animal   Animal class for marker tracking analysis</span>
+    <span class="comment">% This class encapsulates data required to analyze MotionCapture data</span>
+    <span class="comment">% in animals.</span>
+    <span class="comment">%</span>
+    <span class="comment">% Rat Properties:</span>
+    <span class="comment">%    path - filepath or condition of animal</span>
+    <span class="comment">%    skeleton - graph describing animal skeleton and markers</span>
+    <span class="comment">%    markers - global marker positions of the animal</span>
+    <span class="comment">%    alignedMarkers - aligned marker positions relative to midline</span>
+    <span class="comment">%    imputedMarkers - imputed aligned marker positions</span>
+    <span class="comment">%    badFrames - logical matrix denoting the time of bad frames for</span>
+    <span class="comment">%                 all markers</span>
+    <span class="comment">%    embedFrames - frames for which there exists embeddings</span>
+    <span class="comment">%    embed - embedding points</span>
+    <span class="comment">%    hlink - linking instructions for vizualizations</span>
+    <span class="comment">%    remainingBadFrames - frames that are still bad after imputation.</span>
+    <span class="comment">%</span>
+    <span class="comment">% myClass Methods:</span>
+    <span class="comment">%    Animal - constructor</span>
+    <span class="comment">%    stackedplot - plot marker traces for given indices</span>
+    <span class="comment">%    compareTraces - plot marker traces for imputed and non-imputed</span>
+    <span class="comment">%    getNodes - returns marker names</span>
+    <span class="comment">%    getSegmentJoints - return segment indices</span>
+    <span class="comment">%    getSegmentColors - return segment colors</span>
+    <span class="comment">%    setSegmentColors - set segment colors</span>
+    <span class="comment">%    movie - interactive marker movie</span>
+    <span class="comment">%    writeMovie - write movie to a save file</span>
+    <span class="keyword">properties</span> (Access = private)
+        loadingFieldNames = {<span class="string">'markers'</span>,<span class="string">'preds'</span>,<span class="string">'badFrames'</span>};
+    <span class="keyword">end</span>
+
+    <span class="keyword">properties</span> (Access = public)
+        path
+        fps = 60;
+        skeleton
+        markers
+        embed
+        embedFrames
+        alignedMarkers
+        imputedMarkers
+        badFrames
+        remainingBadFrames
+        hlink
+    <span class="keyword">end</span>
+
+    <span class="keyword">methods</span>
+
+        <span class="comment">% Constructor</span>
+        <span class="keyword">function</span> obj = Animal(varargin)
+            <span class="comment">%Animal - construct an Animal Object</span>
+            <span class="comment">%</span>
+            <span class="comment">%   Syntax: animal = Animal(varargin);</span>
+            <span class="comment">%</span>
+            <span class="comment">%   Optional Inputs:</span>
+            <span class="comment">%       path - Path to an imputation file. Will load included</span>
+            <span class="comment">%              data automatically.</span>
+            <span class="comment">%       fps - frame rate</span>
+            <span class="comment">%       skeleton - animal skeleton</span>
+            <span class="comment">%       markers - global marker set</span>
+            <span class="comment">%       alignedMarkers - aligned marker set</span>
+            <span class="comment">%       imputedMarkers - imputed marker set</span>
+            <span class="comment">%       embed - behavioral embedding</span>
+            <span class="comment">%       embedFrames - frames that have been embedded</span>
+            <span class="comment">%       badFrames - improperly tracked frames</span>
+            <span class="comment">%       remainingBadFrames - remaining bad frames after</span>
+            <span class="comment">%                            imputation</span>
+            <span class="comment">%       hlink - chart linking function</span>
+            <span class="keyword">if</span> ~isempty(varargin)
+                set(obj,varargin{:});
+            <span class="keyword">end</span>
+            <span class="keyword">if</span> ~isempty(obj.path)
+                <span class="comment">% Load the data</span>
+                [~,~,ext] = fileparts(obj.path);
+                <span class="keyword">switch</span> lower(ext)
+                    <span class="keyword">case</span> <span class="string">'.mat'</span>
+                        temp = load(obj.path, obj.loadingFieldNames{:});
+                        obj.alignedMarkers =<span class="keyword">...</span>
+                            temp.(obj.loadingFieldNames{1});
+                        obj.imputedMarkers =<span class="keyword">...</span>
+                            temp.(obj.loadingFieldNames{2});
+                        obj.badFrames = temp.(obj.loadingFieldNames{3});
+                        clear <span class="string">temp</span>;
+                    <span class="keyword">case</span> {<span class="string">'.h5'</span>, <span class="string">'.hdf5'</span>}
+                        obj.alignedMarkers = h5read(obj.path,<span class="keyword">...</span>
+                            [<span class="string">'/'</span> obj.loadingFieldNames{1}])';
+                        obj.imputedMarkers = h5read(obj.path,<span class="keyword">...</span>
+                            [<span class="string">'/'</span> obj.loadingFieldNames{2}])';
+                        obj.badFrames = h5read(obj.path,<span class="keyword">...</span>
+                            [<span class="string">'/'</span> obj.loadingFieldNames{3}])';
+                    <span class="keyword">otherwise</span>
+                        error(<span class="string">'Unexpected file extension: %s'</span>, ext);
+                <span class="keyword">end</span>
+            <span class="keyword">end</span>
+        <span class="keyword">end</span>
+
+        <span class="comment">% Build stackedplot of marker trajectories</span>
+        <span class="keyword">function</span> stackedplot(obj, markerset, frameIds, varargin)
+            <span class="keyword">switch</span> markerset
+                <span class="keyword">case</span> <span class="string">'aligned'</span>
+                    x = array2table(obj.alignedMarkers(frameIds,:));
+                <span class="keyword">case</span> <span class="string">'imputed'</span>
+                    x = array2table(obj.imputedMarkers(frameIds,:));
+                <span class="keyword">case</span> <span class="string">'global'</span>
+                    x = array2table(obj.markers(frameIds,:));
+                <span class="keyword">otherwise</span>
+                    error([<span class="string">'Improper markerset. Must be aligned, '</span> <span class="keyword">...</span>
+                        <span class="string">'imputed, or global.'</span>]);
+            <span class="keyword">end</span>
+            stackedplot(x,varargin{:});
+        <span class="keyword">end</span>
+
+        <span class="keyword">function</span> f = compareTraces(obj, frameIds, markerIds, varargin)
+            <span class="comment">%compareTraces plot aligned and imputed marker traces together</span>
+            <span class="comment">%</span>
+            <span class="comment">%   Syntax: Animal.compareTraces(frameIds,markerIds);</span>
+            <span class="comment">%           compareTraces(Animal,frameIds,markerIds);</span>
+            <span class="comment">%</span>
+            <span class="comment">%           Animal.compareTraces(Animal,frameIds,markerIds,...</span>
+            <span class="comment">%               interTraceSpacing,barHeight,offset,colors);</span>
+            <span class="comment">%   Inputs: frameIds - Frames to plot</span>
+            <span class="comment">%           markerIds - Markers to plot (3d marker dimension)</span>
+            <span class="comment">%</span>
+            <span class="comment">%   Optional: interTraceSpacing - distance between middle of</span>
+            <span class="comment">%             traces</span>
+            <span class="comment">%             barHeight - height of bars denoting bad frames</span>
+            <span class="comment">%             colors - Nx3 matrix of rgb color values. N must</span>
+            <span class="comment">%             equal numel(markerIds).</span>
+            numvarargs = length(varargin);
+            <span class="keyword">if</span> numvarargs &gt; 4
+                error(<span class="string">'myfuns:somefun2Alt:TooManyInputs'</span>, <span class="keyword">...</span>
+                    <span class="string">'Accepts at most 4 optional inputs'</span>);
+            <span class="keyword">end</span>
+            optargs = {150,150,20,[]};
+            optargs(1:numvarargs) = varargin;
+            [interTraceSpacing, barHeight, offset,c] = optargs{:};
+
+            <span class="comment">% Organize the necessary data</span>
+            numTraces = numel(markerIds);
+            X = diffpad(obj.alignedMarkers(frameIds,markerIds));
+            Y = diffpad(obj.imputedMarkers(frameIds,markerIds));
+            markerIds3D = ceil(markerIds/3);
+            BF = obj.badFrames(frameIds,markerIds3D);
+
+            midlines =<span class="keyword">...</span>
+                ((numTraces-1)*interTraceSpacing):-interTraceSpacing:0;
+            barEdges = midlines-round(barHeight/2);
+            map = @(X,n,target) [linspace(X(1),target(1),n)',<span class="keyword">...</span>
+                linspace(X(2),target(2),n)',<span class="keyword">...</span>
+                linspace(X(3),target(3),n)'];
+            nColorsInMap = 7;
+            target = [.7 .7 .7];
+            <span class="keyword">if</span> isempty(c)
+                c = lines(numTraces);
+            <span class="keyword">end</span>
+
+            <span class="comment">% Allocate figure</span>
+            f = gcf; set(f,<span class="string">'color'</span>,<span class="string">'w'</span>); hold <span class="string">on</span>;
+            addToolbarExplorationButtons;
+            <span class="keyword">for</span> i = 1:numTraces
+                imputeBlocks = bwconncomp(BF(:,i) | any(isnan(X(:,i)),2));
+                Pix = imputeBlocks.PixelIdxList;
+                <span class="keyword">for</span> j = 1:numel(Pix)
+                    pos = [Pix{j}(1)/obj.fps,<span class="keyword">...</span>
+                        barEdges(i),<span class="keyword">...</span>
+                        numel(Pix{j})/obj.fps,<span class="keyword">...</span>
+                        barHeight];
+                    rectangle(<span class="string">'Position'</span>,pos,<span class="string">'FaceColor'</span>,[1 1 1].*.9,<span class="keyword">...</span>
+                        <span class="string">'EdgeColor'</span>,<span class="string">'none'</span>)
+                <span class="keyword">end</span>
+
+                medX = nanmedian(X(:,i));
+                medY = nanmedian(Y(:,i));
+                cmap = map(c(i,:),nColorsInMap,target);
+                plot((1:numel(frameIds))/obj.fps,<span class="keyword">...</span>
+                    X(:,i) - medX + midlines(i) + offset/2,<span class="keyword">...</span>
+                    <span class="string">'color'</span>,cmap(1,:),<span class="string">'LineWidth'</span>,2)
+                plot((1:numel(frameIds))/obj.fps,<span class="keyword">...</span>
+                    Y(:,i) - medY + midlines(i) - offset/2,<span class="keyword">...</span>
+                    <span class="string">'color'</span>,cmap(5,:),<span class="string">'LineWidth'</span>,2)
+            <span class="keyword">end</span>
+            xlabel(<span class="string">'Time (s)'</span>);
+            yticks(midlines(end:-1:1))
+            nodes = obj.getNodes;
+            labels = cell(numTraces,1);
+            dim = {<span class="string">'_{z_{vel}}'</span>,<span class="string">'_{x_{vel}}'</span>,<span class="string">'_{y_{vel}}'</span>};
+
+            <span class="keyword">for</span> i = 1:numTraces
+                labels{i} = [nodes{markerIds3D(i)}<span class="keyword">...</span>
+                    dim{mod(markerIds(i),3)+1}];
+            <span class="keyword">end</span>
+            yticklabels(labels(end:-1:1));
+            set(gca,<span class="string">'box'</span>,<span class="string">'off'</span>);
+            axis <span class="string">tight</span>
+        <span class="keyword">end</span>
+
+        <span class="comment">% Get the node names</span>
+        <span class="keyword">function</span> nodes = getNodes(obj)
+            nodes = obj.skeleton.nodes;
+        <span class="keyword">end</span>
+
+        <span class="comment">% Get the joint indices of the node names</span>
+        <span class="keyword">function</span> joints_idx = getSegmentJoints(obj)
+            joints_idx = obj.skeleton.segments.joints_idx;
+        <span class="keyword">end</span>
+
+        <span class="comment">% Get the segment colors</span>
+        <span class="keyword">function</span> colors = getSegmentColors(obj)
+            colors = obj.skeleton.segments.color;
+        <span class="keyword">end</span>
+
+        <span class="comment">% Set the segment colors.</span>
+        <span class="keyword">function</span> obj = setSegmentColors(obj, colors)
+            obj.skeleton.segments.color = colors;
+        <span class="keyword">end</span>
+
+        <span class="keyword">function</span> obj = postProcess(obj,varargin)
+            <span class="comment">%postprocessMBI - Postprocess MBI marker predictions.</span>
+            <span class="comment">%</span>
+            <span class="comment">% Syntax: Animal.postProcess();</span>
+            <span class="comment">%         Animal.postProcess(smoothingWindow,</span>
+            <span class="comment">%                            badFrameThreshold,</span>
+            <span class="comment">%                            badFrameSurround);</span>
+            <span class="comment">%</span>
+            <span class="comment">% Optional Inputs:</span>
+            <span class="comment">%    smoothingWindow - Number of frames to use in median</span>
+            <span class="comment">%                       smoothing. Default 5.</span>
+            <span class="comment">%</span>
+            <span class="comment">%    badFrameThreshold - Threshold at which to trigger a bad</span>
+            <span class="comment">%                        frame. Default 1. Metric is the</span>
+            <span class="comment">%                        z-scored energy of jerk. For use in</span>
+            <span class="comment">%                        getRemainingBadFrames.m</span>
+            <span class="comment">%</span>
+            <span class="comment">%    badFrameSurround - Number of surrounding frames to flag</span>
+            <span class="comment">%                       in the event of a trigger.</span>
+            <span class="comment">%                       Default 150. For use in</span>
+            <span class="comment">%                       getRemainingBadFrames.m</span>
+            numvarargs = length(varargin);
+            <span class="keyword">if</span> numvarargs &gt; 3
+                error(<span class="string">'myfuns:somefun2Alt:TooManyInputs'</span>, <span class="keyword">...</span>
+                    <span class="string">'Accepts at most 3 optional inputs'</span>);
+            <span class="keyword">end</span>
+            optargs = {5,1,150};
+            optargs(1:numvarargs) = varargin;
+            [smoothingWindow,badFrameThreshold,badFrameSurround] =<span class="keyword">...</span>
+                optargs{:};
+
+            <span class="comment">% Add nans for the portions of the markers that were incorrect</span>
+            obj.alignedMarkers(logical(repelem(obj.badFrames,1,3))) = nan;
+            <span class="keyword">for</span> i = 1:size(obj.alignedMarkers,2)
+                <span class="comment">% Nan values were previously assigned the mean for ease</span>
+                <span class="comment">% of imputation.</span>
+                <span class="comment">% Reassign to nans, except for SpineM</span>
+                <span class="keyword">if</span> i &gt;= 13 || i &lt;= 15
+                    <span class="keyword">continue</span>;
+                <span class="keyword">end</span>
+                marker = obj.alignedMarkers(:,i);
+                marker(marker == mode(marker)) = nan;
+                obj.alignedMarkers(:,i) = marker;
+            <span class="keyword">end</span>
+
+            <span class="comment">% Smooth the predicitons</span>
+            padding = smoothingWindow;
+            <span class="keyword">for</span> i = 1:size(obj.badFrames,2)
+                CC = bwconncomp(obj.badFrames(:,i));
+                markerIds = (i-1)*3 + (1:3);
+                <span class="keyword">for</span> j = 1:numel(CC.PixelIdxList)
+                    frameIds = CC.PixelIdxList{j};
+                    frameIds = <span class="keyword">...</span>
+                        (frameIds(1) - padding):(frameIds(end) + padding);
+                    frameIds = frameIds((frameIds &gt; 0)<span class="keyword">...</span>
+                        &amp; (frameIds &lt; size(obj.imputedMarkers,1)));
+                    obj.imputedMarkers(frameIds,markerIds) =<span class="keyword">...</span>
+                        smoothdata(obj.imputedMarkers(frameIds,markerIds),<span class="keyword">...</span>
+                        <span class="string">'movmedian'</span>,smoothingWindow);
+                <span class="keyword">end</span>
+            <span class="keyword">end</span>
+
+            <span class="comment">% Get the remaining bad frames</span>
+            obj.remainingBadFrames =<span class="keyword">...</span>
+                getRemainingBadFrames(obj.imputedMarkers,<span class="keyword">...</span>
+                badFrameThreshold, badFrameSurround);
+            obj.remainingBadFrames(find(obj.badFrames(:,4))) = true;
+        <span class="keyword">end</span>
+
+        <span class="keyword">function</span> h = movie(obj,markerset,varargin)
+            <span class="comment">%movie - interactive MarkerMovie</span>
+            <span class="comment">%</span>
+            <span class="comment">%   Syntax: Animal.movie(markerset);</span>
+            <span class="comment">%</span>
+            <span class="comment">%   Inputs: markerset - can be 'aligned','imputed','global',</span>
+            <span class="comment">%           'embed', or a cell array of these four options.</span>
+            <span class="comment">%           varargin - arguments to MarkerMovie constructor.</span>
+            <span class="comment">%</span>
+            <span class="comment">%   Notes: Markersets will appear side by side in the order</span>
+            <span class="comment">%   given with appropriate titles above. movie supports any</span>
+            <span class="comment">%   number of markersets.</span>
+            <span class="keyword">if</span> isstring(markerset) || ischar(markerset)
+                markerset = {markerset};
+            <span class="keyword">end</span>
+
+            <span class="comment">% For each element in markerset, plot the appropriate chart</span>
+            numComparisons = numel(markerset);
+            [x,positions,h,titles] = deal(cell(numComparisons,1));
+            isMM = contains(markerset,{<span class="string">'aligned'</span>,<span class="string">'imputed'</span>,<span class="string">'global'</span>});
+            <span class="keyword">for</span> i = 1:numComparisons
+                <span class="comment">% Calculate the position in which to put the chart</span>
+                left = (i-1)*(1/numComparisons);
+                bottom = 0;
+                width = (1/numComparisons);
+                height = 1;
+                positions{i} = [left bottom width height];
+
+                <span class="comment">% Handle each type of chart appropriately</span>
+                <span class="keyword">switch</span> markerset{i}
+                    <span class="keyword">case</span> <span class="string">'aligned'</span>
+                        x{i} = obj.alignedMarkers;
+                        titles{i} = <span class="string">'Aligned unimputed'</span>;
+                    <span class="keyword">case</span> <span class="string">'imputed'</span>
+                        x{i} = obj.imputedMarkers;
+                        titles{i} = <span class="string">'Aligned imputed'</span>;
+                    <span class="keyword">case</span> <span class="string">'global'</span>
+                        x{i} = obj.markers(ids,:);
+                        titles{i} = <span class="string">'Global'</span>;
+                    <span class="keyword">case</span> <span class="string">'embed'</span>
+                        h{i} = embedMovie(<span class="string">'embed'</span>,obj.embed,<span class="keyword">...</span>
+                            <span class="string">'embedFrames'</span>,obj.embedFrames,<span class="keyword">...</span>
+                            <span class="string">'numFrames'</span>,size(obj.imputedMarkers,1),<span class="keyword">...</span>
+                            <span class="string">'AxesPosition'</span>,positions{i});
+                    <span class="keyword">otherwise</span>
+                        error([<span class="string">'Improper markerset. Must be aligned, '</span> <span class="keyword">...</span>
+                            <span class="string">'imputed, or global.'</span>]);
+                <span class="keyword">end</span>
+
+                <span class="keyword">if</span> isMM(i)
+                    h{i} = MarkerMovie(<span class="string">'markers'</span>,x{i},<span class="keyword">...</span>
+                        <span class="string">'skeleton'</span>,obj.skeleton,<span class="keyword">...</span>
+                        <span class="string">'AxesPosition'</span>,positions{i},<span class="keyword">...</span>
+                        <span class="string">'movieTitle'</span>,titles{i},<span class="keyword">...</span>
+                        varargin{:});
+                <span class="keyword">end</span>
+            <span class="keyword">end</span>
+
+            <span class="comment">% Set the figure keypress function to iterate through all</span>
+            <span class="comment">% charts' keypress functions.</span>
+            set(h{1}.Parent,<span class="string">'WindowKeyPressFcn'</span>,<span class="keyword">...</span>
+                @(src,event) MarkerMovie.runAll(h,src,event));
+
+            <span class="comment">% Link the axes of the MarkerMovie objects</span>
+            obj.hlink = linkprop(h{1}.Parent.Children(isMM(end:-1:1)),<span class="keyword">...</span>
+                {<span class="string">'CameraPosition'</span>,<span class="string">'CameraUpVector'</span>});
+        <span class="keyword">end</span>
+
+        <span class="keyword">function</span> V = writeMovie(obj,markerset,frameIds,savePath,varargin)
+            <span class="comment">%writeMovie - write a MarkerMovie</span>
+            <span class="comment">%</span>
+            <span class="comment">%   Syntax: Animal.writeMovie(markerset,frameIds,savePath);</span>
+            <span class="comment">%</span>
+            <span class="comment">%   Inputs: markerset - can be 'aligned','imputed','global',</span>
+            <span class="comment">%           'embed', or a cell array of these three options.</span>
+            <span class="comment">%           frameIds - frames to write</span>
+            <span class="comment">%           savePath - path to save movie</span>
+            <span class="comment">%           varargin - arguments to write_frames.m.</span>
+            <span class="comment">%</span>
+            <span class="comment">%   Required .m files: write_frames.m</span>
+            mm = movie(obj,markerset);
+            <span class="keyword">if</span> numel(mm) == 1; mm = {mm}; <span class="keyword">end</span>
+
+            fig = mm{1}.Parent;
+            V = cell(numel(frameIds),1);
+            tic
+            <span class="keyword">for</span> i = 1:numel(frameIds)
+                <span class="keyword">for</span> j = 1:numel(mm)
+                    mm{j}.Frame = frameIds(i);
+                <span class="keyword">end</span>
+                F = getframe(fig);
+                V{i} = F.cdata;
+                <span class="keyword">if</span> i == 100
+                    rate = 100/(toc);
+                    fprintf(<span class="string">'Estimated time remaining: %f seconds\n'</span>,<span class="keyword">...</span>
+                        numel(frameIds)/rate)
+                <span class="keyword">end</span>
+            <span class="keyword">end</span>
+            V = cat(4,V{:});
+            fprintf(<span class="string">'Writing movie to: %s\n'</span>, savePath);
+            write_frames(V,savePath,varargin{:});
+        <span class="keyword">end</span>
+    <span class="keyword">end</span>
+<span class="keyword">end</span>
+</pre><pre class="codeoutput">
+ans = 
+
+  Animal with properties:
+
+                  path: []
+                   fps: 60
+              skeleton: []
+               markers: []
+                 embed: []
+           embedFrames: []
+        alignedMarkers: []
+        imputedMarkers: []
+             badFrames: []
+    remainingBadFrames: []
+                 hlink: []
+
+</pre><p class="footer"><br><a href="https://www.mathworks.com/products/matlab/">Published with MATLAB&reg; R2018b</a><br></p></div><!--
+##### SOURCE BEGIN #####
+classdef Animal < matlab.mixin.SetGet
+    % Animal   Animal class for marker tracking analysis
+    % This class encapsulates data required to analyze MotionCapture data
+    % in animals.
+    %
+    % Rat Properties:
+    %    path - filepath or condition of animal
+    %    skeleton - graph describing animal skeleton and markers
+    %    markers - global marker positions of the animal
+    %    alignedMarkers - aligned marker positions relative to midline
+    %    imputedMarkers - imputed aligned marker positions
+    %    badFrames - logical matrix denoting the time of bad frames for
+    %                 all markers
+    %    embedFrames - frames for which there exists embeddings
+    %    embed - embedding points
+    %    hlink - linking instructions for vizualizations
+    %    remainingBadFrames - frames that are still bad after imputation.
+    %
+    % myClass Methods:
+    %    Animal - constructor
+    %    stackedplot - plot marker traces for given indices
+    %    compareTraces - plot marker traces for imputed and non-imputed
+    %    getNodes - returns marker names
+    %    getSegmentJoints - return segment indices
+    %    getSegmentColors - return segment colors
+    %    setSegmentColors - set segment colors
+    %    movie - interactive marker movie
+    %    writeMovie - write movie to a save file
+    properties (Access = private)
+        loadingFieldNames = {'markers','preds','badFrames'};
+    end
+    
+    properties (Access = public)
+        path
+        fps = 60;
+        skeleton
+        markers
+        embed
+        embedFrames
+        alignedMarkers
+        imputedMarkers
+        badFrames
+        remainingBadFrames
+        hlink
+    end
+    
+    methods
+        
+        % Constructor
+        function obj = Animal(varargin)
+            %Animal - construct an Animal Object
+            %
+            %   Syntax: animal = Animal(varargin);
+            %
+            %   Optional Inputs: 
+            %       path - Path to an imputation file. Will load included
+            %              data automatically.
+            %       fps - frame rate 
+            %       skeleton - animal skeleton
+            %       markers - global marker set
+            %       alignedMarkers - aligned marker set
+            %       imputedMarkers - imputed marker set
+            %       embed - behavioral embedding
+            %       embedFrames - frames that have been embedded
+            %       badFrames - improperly tracked frames
+            %       remainingBadFrames - remaining bad frames after
+            %                            imputation
+            %       hlink - chart linking function 
+            if ~isempty(varargin)
+                set(obj,varargin{:});
+            end
+            if ~isempty(obj.path)
+                % Load the data
+                [~,~,ext] = fileparts(obj.path);
+                switch lower(ext)
+                    case '.mat'
+                        temp = load(obj.path, obj.loadingFieldNames{:});
+                        obj.alignedMarkers =...
+                            temp.(obj.loadingFieldNames{1});
+                        obj.imputedMarkers =...
+                            temp.(obj.loadingFieldNames{2});
+                        obj.badFrames = temp.(obj.loadingFieldNames{3});
+                        clear temp;
+                    case {'.h5', '.hdf5'}
+                        obj.alignedMarkers = h5read(obj.path,...
+                            ['/' obj.loadingFieldNames{1}])';
+                        obj.imputedMarkers = h5read(obj.path,...
+                            ['/' obj.loadingFieldNames{2}])';
+                        obj.badFrames = h5read(obj.path,...
+                            ['/' obj.loadingFieldNames{3}])';
+                    otherwise
+                        error('Unexpected file extension: %s', ext);
+                end
+            end
+        end
+        
+        % Build stackedplot of marker trajectories
+        function stackedplot(obj, markerset, frameIds, varargin)
+            switch markerset
+                case 'aligned'
+                    x = array2table(obj.alignedMarkers(frameIds,:));
+                case 'imputed'
+                    x = array2table(obj.imputedMarkers(frameIds,:));
+                case 'global'
+                    x = array2table(obj.markers(frameIds,:));
+                otherwise
+                    error(['Improper markerset. Must be aligned, ' ...
+                        'imputed, or global.']);
+            end
+            stackedplot(x,varargin{:});
+        end
+        
+        function f = compareTraces(obj, frameIds, markerIds, varargin)
+            %compareTraces plot aligned and imputed marker traces together
+            %
+            %   Syntax: Animal.compareTraces(frameIds,markerIds);
+            %           compareTraces(Animal,frameIds,markerIds);
+            %
+            %           Animal.compareTraces(Animal,frameIds,markerIds,...
+            %               interTraceSpacing,barHeight,offset,colors);
+            %   Inputs: frameIds - Frames to plot
+            %           markerIds - Markers to plot (3d marker dimension)
+            %
+            %   Optional: interTraceSpacing - distance between middle of
+            %             traces
+            %             barHeight - height of bars denoting bad frames
+            %             colors - Nx3 matrix of rgb color values. N must
+            %             equal numel(markerIds).
+            numvarargs = length(varargin);
+            if numvarargs > 4
+                error('myfuns:somefun2Alt:TooManyInputs', ...
+                    'Accepts at most 4 optional inputs');
+            end
+            optargs = {150,150,20,[]};
+            optargs(1:numvarargs) = varargin;
+            [interTraceSpacing, barHeight, offset,c] = optargs{:};
+            
+            % Organize the necessary data
+            numTraces = numel(markerIds);
+            X = diffpad(obj.alignedMarkers(frameIds,markerIds));
+            Y = diffpad(obj.imputedMarkers(frameIds,markerIds));
+            markerIds3D = ceil(markerIds/3);
+            BF = obj.badFrames(frameIds,markerIds3D);
+            
+            midlines =...
+                ((numTraces-1)*interTraceSpacing):-interTraceSpacing:0;
+            barEdges = midlines-round(barHeight/2);
+            map = @(X,n,target) [linspace(X(1),target(1),n)',...
+                linspace(X(2),target(2),n)',...
+                linspace(X(3),target(3),n)'];
+            nColorsInMap = 7;
+            target = [.7 .7 .7];
+            if isempty(c)
+                c = lines(numTraces);
+            end
+            
+            % Allocate figure
+            f = gcf; set(f,'color','w'); hold on;
+            addToolbarExplorationButtons;
+            for i = 1:numTraces
+                imputeBlocks = bwconncomp(BF(:,i) | any(isnan(X(:,i)),2));
+                Pix = imputeBlocks.PixelIdxList;
+                for j = 1:numel(Pix)
+                    pos = [Pix{j}(1)/obj.fps,...
+                        barEdges(i),...
+                        numel(Pix{j})/obj.fps,...
+                        barHeight];
+                    rectangle('Position',pos,'FaceColor',[1 1 1].*.9,...
+                        'EdgeColor','none')
+                end
+                
+                medX = nanmedian(X(:,i));
+                medY = nanmedian(Y(:,i));
+                cmap = map(c(i,:),nColorsInMap,target);
+                plot((1:numel(frameIds))/obj.fps,...
+                    X(:,i) - medX + midlines(i) + offset/2,...
+                    'color',cmap(1,:),'LineWidth',2)
+                plot((1:numel(frameIds))/obj.fps,...
+                    Y(:,i) - medY + midlines(i) - offset/2,...
+                    'color',cmap(5,:),'LineWidth',2)
+            end
+            xlabel('Time (s)');
+            yticks(midlines(end:-1:1))
+            nodes = obj.getNodes;
+            labels = cell(numTraces,1);
+            dim = {'_{z_{vel}}','_{x_{vel}}','_{y_{vel}}'};
+            
+            for i = 1:numTraces
+                labels{i} = [nodes{markerIds3D(i)}...
+                    dim{mod(markerIds(i),3)+1}];
+            end
+            yticklabels(labels(end:-1:1));
+            set(gca,'box','off');
+            axis tight
+        end
+        
+        % Get the node names
+        function nodes = getNodes(obj)
+            nodes = obj.skeleton.nodes;
+        end
+        
+        % Get the joint indices of the node names
+        function joints_idx = getSegmentJoints(obj)
+            joints_idx = obj.skeleton.segments.joints_idx;
+        end
+        
+        % Get the segment colors
+        function colors = getSegmentColors(obj)
+            colors = obj.skeleton.segments.color;
+        end
+        
+        % Set the segment colors.
+        function obj = setSegmentColors(obj, colors)
+            obj.skeleton.segments.color = colors;
+        end
+        
+        function obj = postProcess(obj,varargin)
+            %postprocessMBI - Postprocess MBI marker predictions.
+            %
+            % Syntax: Animal.postProcess();
+            %         Animal.postProcess(smoothingWindow,
+            %                            badFrameThreshold,
+            %                            badFrameSurround);
+            %
+            % Optional Inputs:
+            %    smoothingWindow - Number of frames to use in median 
+            %                       smoothing. Default 5.
+            %
+            %    badFrameThreshold - Threshold at which to trigger a bad
+            %                        frame. Default 1. Metric is the 
+            %                        z-scored energy of jerk. For use in 
+            %                        getRemainingBadFrames.m
+            %
+            %    badFrameSurround - Number of surrounding frames to flag 
+            %                       in the event of a trigger. 
+            %                       Default 150. For use in
+            %                       getRemainingBadFrames.m
+            numvarargs = length(varargin);
+            if numvarargs > 3
+                error('myfuns:somefun2Alt:TooManyInputs', ...
+                    'Accepts at most 3 optional inputs');
+            end
+            optargs = {5,1,150};
+            optargs(1:numvarargs) = varargin;
+            [smoothingWindow,badFrameThreshold,badFrameSurround] =...
+                optargs{:};
+            
+            % Add nans for the portions of the markers that were incorrect
+            obj.alignedMarkers(logical(repelem(obj.badFrames,1,3))) = nan;
+            for i = 1:size(obj.alignedMarkers,2)
+                % Nan values were previously assigned the mean for ease
+                % of imputation.
+                % Reassign to nans, except for SpineM
+                if i >= 13 || i <= 15
+                    continue;
+                end
+                marker = obj.alignedMarkers(:,i);
+                marker(marker == mode(marker)) = nan;
+                obj.alignedMarkers(:,i) = marker;
+            end
+            
+            % Smooth the predicitons
+            padding = smoothingWindow;
+            for i = 1:size(obj.badFrames,2)
+                CC = bwconncomp(obj.badFrames(:,i));
+                markerIds = (i-1)*3 + (1:3);
+                for j = 1:numel(CC.PixelIdxList)
+                    frameIds = CC.PixelIdxList{j};
+                    frameIds = ...
+                        (frameIds(1) - padding):(frameIds(end) + padding);
+                    frameIds = frameIds((frameIds > 0)...
+                        & (frameIds < size(obj.imputedMarkers,1)));
+                    obj.imputedMarkers(frameIds,markerIds) =...
+                        smoothdata(obj.imputedMarkers(frameIds,markerIds),...
+                        'movmedian',smoothingWindow);
+                end
+            end
+            
+            % Get the remaining bad frames
+            obj.remainingBadFrames =...
+                getRemainingBadFrames(obj.imputedMarkers,...
+                badFrameThreshold, badFrameSurround);
+            obj.remainingBadFrames(find(obj.badFrames(:,4))) = true;
+        end
+        
+        function h = movie(obj,markerset,varargin)
+            %movie - interactive MarkerMovie
+            %
+            %   Syntax: Animal.movie(markerset);
+            %
+            %   Inputs: markerset - can be 'aligned','imputed','global',
+            %           'embed', or a cell array of these four options.
+            %           varargin - arguments to MarkerMovie constructor.
+            %
+            %   Notes: Markersets will appear side by side in the order
+            %   given with appropriate titles above. movie supports any
+            %   number of markersets.
+            if isstring(markerset) || ischar(markerset)
+                markerset = {markerset};
+            end
+            
+            % For each element in markerset, plot the appropriate chart
+            numComparisons = numel(markerset);
+            [x,positions,h,titles] = deal(cell(numComparisons,1));
+            isMM = contains(markerset,{'aligned','imputed','global'});
+            for i = 1:numComparisons
+                % Calculate the position in which to put the chart
+                left = (i-1)*(1/numComparisons);
+                bottom = 0;
+                width = (1/numComparisons);
+                height = 1;
+                positions{i} = [left bottom width height];
+                
+                % Handle each type of chart appropriately
+                switch markerset{i}
+                    case 'aligned'
+                        x{i} = obj.alignedMarkers;
+                        titles{i} = 'Aligned unimputed';
+                    case 'imputed'
+                        x{i} = obj.imputedMarkers;
+                        titles{i} = 'Aligned imputed';
+                    case 'global'
+                        x{i} = obj.markers(ids,:);
+                        titles{i} = 'Global';
+                    case 'embed'
+                        h{i} = embedMovie('embed',obj.embed,...
+                            'embedFrames',obj.embedFrames,...
+                            'numFrames',size(obj.imputedMarkers,1),...
+                            'AxesPosition',positions{i});
+                    otherwise
+                        error(['Improper markerset. Must be aligned, ' ...
+                            'imputed, or global.']);
+                end
+                
+                if isMM(i)
+                    h{i} = MarkerMovie('markers',x{i},...
+                        'skeleton',obj.skeleton,...
+                        'AxesPosition',positions{i},...
+                        'movieTitle',titles{i},...
+                        varargin{:});
+                end
+            end
+            
+            % Set the figure keypress function to iterate through all
+            % charts' keypress functions.
+            set(h{1}.Parent,'WindowKeyPressFcn',...
+                @(src,event) MarkerMovie.runAll(h,src,event));
+            
+            % Link the axes of the MarkerMovie objects
+            obj.hlink = linkprop(h{1}.Parent.Children(isMM(end:-1:1)),...
+                {'CameraPosition','CameraUpVector'});
+        end
+        
+        function V = writeMovie(obj,markerset,frameIds,savePath,varargin)
+            %writeMovie - write a MarkerMovie
+            %
+            %   Syntax: Animal.writeMovie(markerset,frameIds,savePath);
+            %
+            %   Inputs: markerset - can be 'aligned','imputed','global',
+            %           'embed', or a cell array of these three options.
+            %           frameIds - frames to write
+            %           savePath - path to save movie
+            %           varargin - arguments to write_frames.m.
+            %
+            %   Required .m files: write_frames.m
+            mm = movie(obj,markerset);
+            if numel(mm) == 1; mm = {mm}; end
+            
+            fig = mm{1}.Parent;
+            V = cell(numel(frameIds),1);
+            tic
+            for i = 1:numel(frameIds)
+                for j = 1:numel(mm)
+                    mm{j}.Frame = frameIds(i);
+                end
+                F = getframe(fig);
+                V{i} = F.cdata;
+                if i == 100
+                    rate = 100/(toc);
+                    fprintf('Estimated time remaining: %f seconds\n',...
+                        numel(frameIds)/rate)
+                end
+            end
+            V = cat(4,V{:});
+            fprintf('Writing movie to: %s\n', savePath);
+            write_frames(V,savePath,varargin{:});
+        end
+    end
+end
+##### SOURCE END #####
+--></body></html>
