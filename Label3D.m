@@ -150,7 +150,7 @@ classdef Label3D < Animator
             % Set up the cameras
             obj.nCams = numel(camparams);
             obj.h = cell(1);
-            obj.ImageSize = size(videos{1},[1 2]);
+            obj.ImageSize = [size(videos{1},1) size(videos{1},2)];
             [obj.cameraParams, obj.orientations, obj.locations] = ...
                 obj.loadCamParams(camparams);
             obj.cameraPoses = obj.getCameraPoses();

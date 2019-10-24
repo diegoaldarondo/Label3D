@@ -43,8 +43,11 @@ for nVid = 1:numel(vid_paths)
     while hasFrame(vid)
         V{count} = readFrame(vid);
         count = count+1;
+        if count == 101
+            break;
+        end
     end
-    V = cat(4, V{:});
+    V = cat(4, V{1:100});
     videos{nVid} = V;
 end
 

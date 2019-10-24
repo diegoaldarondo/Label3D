@@ -12,18 +12,19 @@ Label3D is a GUI for manual labeling of 3D keypoints in multiple cameras.
 </ol>
 
 ## Usage
+Requires `Matlab 2019b`
 
 Label3D takes a cell arrays of structs of camera parameters as in
 https://github.com/spoonsso/DANNCE, a cell array of corresponding videos (h,w,c,N),
 and a skeleton struct defining a directed graph. Please look at `example.m`
-for examples on how to format data. 
+for examples on how to format data.
 
 ```
 labelGui = Label3D(params, videos, skeleton);
 ```
 
 ## Instructions
-**right**: move forward one frameRate<br>
+<p>**right**: move forward one frameRate<br>
 **left**: move backward one frameRate<br>
 **up**: increase the frameRate<br>
 **down**: decrease the frameRate<br>
@@ -34,7 +35,7 @@ labelGui = Label3D(params, videos, skeleton);
 **tab**: shift the selected node by 1<br>
 **ctrl+tab** or backspace: shift the selected node by -1<br>
 **shift+s**: save data to a `.mat` file<br>
-**h**: print help messages for all `Animators`
+**h**: print help messages for all `Animators`</p>
 
 Written by Diego Aldarondo (2019)
 
