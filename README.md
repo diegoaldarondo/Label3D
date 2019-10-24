@@ -23,7 +23,7 @@ labelGui = Label3D(params, videos, skeleton);
 ```
 
 ## Instructions
-<p>**right**: move forward one frameRate<br>
+**right**: move forward one frameRate<br>
 **left**: move backward one frameRate<br>
 **up**: increase the frameRate<br>
 **down**: decrease the frameRate<br>
@@ -34,7 +34,7 @@ labelGui = Label3D(params, videos, skeleton);
 **tab**: shift the selected node by 1<br>
 **ctrl+tab** or backspace: shift the selected node by -1<br>
 **shift+s**: save data to a `.mat` file<br>
-**h**: print help messages for all `Animators`</p>
+**h**: print help messages for all `Animators`
 
 Written by Diego Aldarondo (2019)
 
