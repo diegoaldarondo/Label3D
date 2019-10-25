@@ -1,13 +1,13 @@
 classdef Label3D < Animator
-    %Label3D - Label3D is a GUI for manual labeling of 3D keypoints in multiple cameras. 
-    % 
+    %Label3D - Label3D is a GUI for manual labeling of 3D keypoints in multiple cameras.
+    %
     % Its main features include:
-    % 1. Simultaneous viewing of any number of camera views. 
+    % 1. Simultaneous viewing of any number of camera views.
     % 2. Multiview triangulation of 3D keypoints.
-    % 3. Point-and-click and draggable gestures to label keypoints. 
+    % 3. Point-and-click and draggable gestures to label keypoints.
     % 4. Zooming, panning, and other default Matlab gestures
-    % 5. Integration with Animator classes. 
-    % 
+    % 5. Integration with Animator classes.
+    %
     % Instructions:
     % right: move forward one frameRate
     % left: move backward one frameRate
@@ -16,10 +16,15 @@ classdef Label3D < Animator
     % t: triangulate points in current frame that have been labeled in at least two images and reproject into each image
     % r: reset gui to the first frame and remove Animator restrictions
     % u: reset the current frame to the initial marker positions
-    % z: zoom all images out to full size
+    % z: Toggle zoom state
+    % p: Show 3d animation plot of the triangulated points. 
+    % backspace: reset currently held node (first click and hold, then
+    %            backspace to delete)
+    % pageup: Set the selectedNode to the first node
     % tab: shift the selected node by 1
-    % ctrl+tab or backspace: shift the selected node by -1
+    % ctrl+tab: shift the selected node by -1
     % h: print help messages for all Animators
+    % shift+s: Save the data to a .mat file
     %
     %   Label3D Properties:
     %   cameraParams - Camera Parameters for all cameras
@@ -31,12 +36,12 @@ classdef Label3D < Animator
     %   status - Logical matrix denoting whether a node has been modified
     %   selectedNode - Currently selected node for click updating
     %   skeleton - Struct denoting directed graph
-    %   ImageSize - Size of the images 
-    %   nMarkers - Number of markers 
+    %   ImageSize - Size of the images
+    %   nMarkers - Number of markers
     %   nCams - Number of Cameras
     %   jointsPanel - Handle to keypoint panel
     %   jointsControl - Handle to keypoint controller
-    %   savePath - Path in which to save data. 
+    %   savePath - Path in which to save data.
     %   h - Cell array of Animator handles.
     %   frameInds - Indices of current subset of frames
     %   frame - Current frame number within subset
@@ -48,23 +53,23 @@ classdef Label3D < Animator
     %   getCameraPoses - Return table of camera poses
     %   zoomOut - Zoom all images out to full size
     %   getLabeledJoints - Return the indices of labeled joints and
-    %       corresponding cameras in a frame. 
-    %   triangulateLabeledPoints - Return xyz positions of labeled joints. 
+    %       corresponding cameras in a frame.
+    %   triangulateLabeledPoints - Return xyz positions of labeled joints.
     %   reprojectPoints - reproject points from world coordinates to the
     %       camera reference frames
     %   resetFrame - reset all labels to the initial positions within a
     %       frame.
     %   clickImage - Assign the position of the selected node with the
-    %       position of a mouse click. 
+    %       position of a mouse click.
     %   getPointTrack - Helper function to return pointTrack object for
-    %       current frame. 
+    %       current frame.
     %   plotCameras - Plot the positions and orientations of all cameras in
-    %       world coordinates. 
+    %       world coordinates.
     %   checkStatus - Check whether points have been moved and update
     %       accordingly
     %   keyPressCallback - handle UI
-    %   saveState - save the current labeled data to a mat file. 
-    %   shiftSelectedNode - Modify the current selected node.
+    %   saveState - save the current labeled data to a mat file.
+    %   selectNode - Modify the current selected node.
     %
     %   Written by Diego Aldarondo (2019)
     %   Some code adapted from https://github.com/talmo/leap
@@ -73,6 +78,8 @@ classdef Label3D < Animator
         joints
         origNFrames
         initialMarkers
+        isKP3Dplotted
+        gridColor = [.7 .7 .7]
         instructions = ['Label3D Guide:\n'...
             'rightarrow: next frame\n' ...
             'leftarrow: previous frame\n' ...
@@ -102,6 +109,7 @@ classdef Label3D < Animator
         jointsPanel
         jointsControl
         savePath
+        kp3a
         h
     end
     
@@ -111,7 +119,7 @@ classdef Label3D < Animator
             %
             %Inputs:
             %   camparams: Cell array of structures denoting camera
-            %              parameters for each camera. 
+            %              parameters for each camera.
             %           Structure has five fields:
             %               K - Intrinsic Matrix
             %               RDistort - Radial distortion
@@ -124,7 +132,7 @@ classdef Label3D < Animator
             %   skeleton: Structure with two fields:
             %       skeleton.color: nSegments x 3 matrix of RGB values
             %       skeleton.joints_idx: nSegments x 2 matrix of integers
-            %           denoting directed edges between markers. 
+            %           denoting directed edges between markers.
             %   Syntax: Label3D(camparams, videos, markers, skeleton, varargin);
             % User defined inputs
             
@@ -144,7 +152,7 @@ classdef Label3D < Animator
             obj.nFrames = size(videos{1},4);
             obj.origNFrames = obj.nFrames;
             obj.frameInds = 1:obj.nFrames;
-%             obj.nMarkers = size(markers{1},3);
+            %             obj.nMarkers = size(markers{1},3);
             obj.nMarkers = numel(unique(obj.skeleton.joints_idx(:)));
             
             % Set up the cameras
@@ -164,7 +172,7 @@ classdef Label3D < Animator
             end
             
             % If there are initialized markers, save them in
-            % initialMarkers, otherwise just set the markers to nan. 
+            % initialMarkers, otherwise just set the markers to nan.
             if isempty(obj.markers)
                 obj.markers = cell(obj.nCams,1);
                 for i = 1:numel(obj.markers)
@@ -182,24 +190,41 @@ classdef Label3D < Animator
                 xlim(obj.h{obj.nCams + i}.getAxes(), [1 obj.ImageSize(2)])
                 ylim(obj.h{obj.nCams + i}.getAxes(), [1 obj.ImageSize(1)])
             end
-                        
+            
             % Initialize data and accounting matrices
             if ~isempty(obj.markers)
                 obj.camPoints = nan(obj.nMarkers,obj.nCams,2,obj.nFrames);
             end
-            obj.points3D = zeros(obj.nMarkers, 3, obj.nFrames);
+            obj.points3D = nan(obj.nMarkers, 3, obj.nFrames);
             obj.status = zeros(obj.nMarkers, obj.nCams, obj.nFrames);
             
             % Link together the Animators
             cellfun(@(X) set(X.getAxes(),...
                 'DataAspectRatioMode', 'auto', 'Color', 'none'), obj.h)
-            Animator.linkAll([obj.h {obj}])
+%             Animator.linkAll([obj.h {obj}])
             obj.selectedNode = 1;
             
             % Style the main Figure
             addToolbarExplorationButtons(obj.Parent)
             set(obj.Parent,'Units','Normalized','pos',[0 .5 .9 .5],...
-                'Name','Label3D GUI','NumberTitle','off')
+                'Name','Label3D GUI','NumberTitle','off','color',[0.1412 0.1412 0.1412])
+           
+            % Set up the 3d keypoint animator
+            m = permute(obj.points3D,[3 2 1]);
+            pos = [.99 .99 .01 .01];
+            obj.kp3a = Keypoint3DAnimator(m, obj.skeleton,'Position',pos,'xlim',[-150 150], 'ylim',[-150 150], 'zlim', [0 300]);
+            obj.kp3a.frameInds = obj.frameInds;
+            obj.kp3a.frame = obj.frame;
+            grid(obj.kp3a.getAxes(), 'on');
+            set(obj.kp3a.getAxes(),'color',[0.1412 0.1412 0.1412],'GridColor',obj.gridColor,'CameraPosition',1.0e+03 * [-1.6835   -1.6713    0.6048],'Visible','off')
+            arrayfun(@(X) set(X, 'Visible','off'), obj.kp3a.PlotSegments);
+            obj.isKP3Dplotted = false;
+            Animator.linkAll([obj.h {obj} {obj.kp3a}])
+            
+            zin = findall(obj.Parent,'tag','Exploration.ZoomIn');
+            set(zin, 'ClickedCallback', @(~,~) obj.toggleZoomIn);
+%             zin = findall(obj.Parent,'tag','Exploration.ZoomOut');
+%             set(zin, 'ClickedCallback', @(~,~) obj.toggleZoom);
             
             % Set up the keypoint table figure
             f = figure('Units','Normalized','pos',[.9 .5 .1 .5],'Name','Keypoint table',...
@@ -208,15 +233,16 @@ classdef Label3D < Animator
                 'Padding', 5,'Units','Normalized');
             obj.jointsControl = uicontrol(obj.jointsPanel, 'Style',...
                 'listbox', 'String', skeleton.joint_names,...
-                'Units','Normalized');
+                'Units','Normalized','Callback',@(h,~,~) obj.selectNode(h.Value));
+            set(obj.Parent.Children(end), 'Visible','off')
         end
         
         function [c, orientations, locations] = loadCamParams(obj, camparams)
             % Helper to load in camera params into cameraParameters objects
-            % and save the world positions. 
+            % and save the world positions.
             [c, orientations, locations] = deal(cell(obj.nCams, 1));
             for i = 1:numel(c)
-                % Get all parameters into cameraParameters object. 
+                % Get all parameters into cameraParameters object.
                 K = camparams{i}.K;
                 RDistort = camparams{i}.RDistort;
                 TDistort = camparams{i}.TDistort;
@@ -251,7 +277,7 @@ classdef Label3D < Animator
         end
         
         function zoomOut(obj)
-            % Zoom all images out to their maximum sizes. 
+            % Zoom all images out to their maximum sizes.
             for i = 1:obj.nCams
                 xlim(obj.h{obj.nCams + i}.getAxes(), [1 obj.ImageSize(2)])
                 ylim(obj.h{obj.nCams + i}.getAxes(), [1 obj.ImageSize(1)])
@@ -264,7 +290,7 @@ classdef Label3D < Animator
             % views.
             s = squeeze(obj.status(:,:,frame));
             labeled = s == 1;
-            jointIds = find(sum(labeled, 2) >= 2); 
+            jointIds = find(sum(labeled, 2) >= 2);
             camIds = labeled(jointIds, :);
         end
         
@@ -289,7 +315,7 @@ classdef Label3D < Animator
             % Save the results to the points3D matrix
             obj.points3D(jointIds, :, frame) = xyzPoints;
         end
-         
+        
         function reprojectPoints(obj, frame)
             % Find the labeled joints and corresponding cameras
             [~, jointIds] = obj.getLabeledJoints(frame);
@@ -309,7 +335,7 @@ classdef Label3D < Animator
         end
         
         function resetFrame(obj)
-            % Reset current frame to the initial unlabeled positions. 
+            % Reset current frame to the initial unlabeled positions.
             for i = 1:obj.nCams
                 obj.h{obj.nCams + i}.resetFrame();
             end
@@ -319,22 +345,29 @@ classdef Label3D < Animator
         
         function clickImage(obj, f, ev)
             % Callback to image clicks (but not on nodes)
-            % Pull out clicked point coordinate
+            % Pull out clicked point coordinate in image coordinates
             pt = zeros(obj.nCams,2);
             for i = 1:obj.nCams
                 pt(i,:) = obj.h{i}.img.Parent.CurrentPoint(1,1:2);
             end
             
-            % Identify frame in which click occured. 
-            goodX = (pt(:,1) >= 1) & (pt(:,1) <= obj.ImageSize(2));
-            goodY = (pt(:,2) >= 1) & (pt(:,2) <= obj.ImageSize(1));
+            % Pull out clicked point in figure coordinates. 
+            fpt = obj.Parent.CurrentPoint;
+            for nCam = 1:obj.nCams
+                pos = obj.h{nCam}.Position;
+                goodX(nCam) = pos(1) <= fpt(1) && fpt(1) < (pos(1) + pos(3));
+                goodY(nCam) = pos(2) <= fpt(2) && fpt(2) < (pos(2) + pos(4));    
+            end
+%             % Identify frame in which click occured.
+%             goodX = (pt(:,1) >= 1) & (pt(:,1) <= obj.ImageSize(2));
+%             goodY = (pt(:,2) >= 1) & (pt(:,2) <= obj.ImageSize(1));
             cam = find(goodX & goodY);
             
-            % Throw a warning if there are more than one good camera. 
+            % Throw a warning if there are more than one good camera.
             if numel(cam) > 1
                 warning(['Click is in multiple images. ' ...
-                'Please zoom image axes such that they are '...
-                'non-overlapping. To zoom out fully in all images, press "z".'])
+                    'Please zoom image axes such that they are '...
+                    'non-overlapping. To zoom out fully in all images, press "z".'])
                 return;
             end
             
@@ -346,18 +379,18 @@ classdef Label3D < Animator
             obj.checkStatus();
             obj.update();
         end
-
+        
         function pt = getPointTrack(obj, frame, jointId, camIds)
             % Returns the corresponding pointTrack object for particular
-            % frames, joint IDs, and cameras. 
+            % frames, joint IDs, and cameras.
             viewIds = find(camIds);
             pt = pointTrack(viewIds,...
                 squeeze(obj.camPoints(jointId, viewIds, :, frame)));
         end
         
         function plotCameras(obj)
-            % Helper function to check camera positions. 
-            f = figure('color','w','Name','Camera Positions','NumberTitle','off'); 
+            % Helper function to check camera positions.
+            f = figure('color','w','Name','Camera Positions','NumberTitle','off');
             ax = axes(f);
             colors = lines(obj.nCams);
             p = cell(obj.nCams,1);
@@ -385,7 +418,7 @@ classdef Label3D < Animator
                 currentMarker = kpAnimator.getCurrentFramePositions();
                 
                 % If there were initializations, use those, otherwise
-                % just check for non-nans. 
+                % just check for non-nans.
                 if isempty(obj.initialMarkers)
                     hasMoved = any(~isnan(currentMarker),2);
                 else
@@ -407,7 +440,7 @@ classdef Label3D < Animator
             % Determine the key that was pressed and any modifiers
             keyPressed = eventdata.Key;
             modifiers = get(gcf, 'CurrentModifier');
-            wasShiftPressed = ismember('shift',   modifiers); 
+            wasShiftPressed = ismember('shift',   modifiers);
             wasCtrlPressed  = ismember('control', modifiers);
             wasAltPressed   = ismember('alt',     modifiers);
             switch keyPressed
@@ -426,23 +459,58 @@ classdef Label3D < Animator
                     update(obj)
                 case 'tab'
                     if wasShiftPressed
-                        obj.shiftSelectedNode(-1)
+                        obj.selectNode(obj.selectedNode-1)
                     else
-                        obj.shiftSelectedNode(1)
+                        obj.selectNode(obj.selectedNode+1)
                     end
-                case 'backspace'
-                    obj.shiftSelectedNode(-1)
                 case 'u'
                     obj.resetFrame();
-                case 'z'
+                case 'o'
                     obj.zoomOut();
+                case 'z'
+                    obj.toggleZoomIn();
                 case 'r'
                     reset(obj);
+                case 'pageup'
+                    obj.selectNode(1);
+                case 'p'
+                    if ~obj.isKP3Dplotted
+                        obj.add3dPlot();
+                    else
+                        obj.remove3dPlot();
+                    end
+            end
+        end
+        
+        function toggleZoomIn(obj)
+            zoomState = zoom(obj.Parent);
+            zoomState.Direction = 'in';
+            if strcmp(zoomState.Enable,'off')
+                % Toggle the zoom state
+                zoomState.Enable = 'on';
+                
+                % This trick disables window listeners that prevent
+                % the installation of custom keypresscallback
+                % functions in ui default modes.
+                % See matlab.uitools.internal.uimode/setCallbackFcn
+                
+                hManager = uigetmodemanager(obj.Parent);
+                matlab.graphics.internal.setListenerState(hManager.WindowListenerHandles,'off');
+                
+                % We need to disable normal keypress mode
+                % functionality to prevent the command window from
+                % taking focus
+                obj.Parent.WindowKeyPressFcn = @(src,event) Animator.runAll([obj.h {obj} {obj.kp3a}],src,event);
+                obj.Parent.KeyPressFcn = [];
+            else
+                zoomState.Enable = 'off';
+                obj.Parent.WindowKeyPressFcn = @(src,event) Animator.runAll([obj.h {obj} {obj.kp3a}],src,event);
+                obj.Parent.KeyPressFcn = [];
             end
         end
         
         function saveState(obj)
-            % Save data to the savePath 
+            % Save data to the savePath
             obj.checkStatus();
             obj.update();
             points2D = obj.camPoints;
@@ -455,13 +523,41 @@ classdef Label3D < Animator
                 'skeleton','imageSize','cameraPoses')
         end
         
-        function shiftSelectedNode(obj, val)
+        function selectNode(obj, val)
             % Update the selected node by val positions.
-            obj.selectedNode = mod(obj.selectedNode + val, obj.nMarkers);
+            
+            obj.selectedNode = mod(val, obj.nMarkers);
             if obj.selectedNode == 0
                 obj.selectedNode = obj.nMarkers;
             end
             obj.jointsControl.Value = obj.selectedNode;
+        end
+        
+        function remove3dPlot(obj)
+            for nAnimator = 1:obj.nCams
+                pos = [(nAnimator-1)/(obj.nCams) 0 1/(obj.nCams) 1];
+                set(obj.h{nAnimator},'Position',pos)
+                set(obj.h{nAnimator+obj.nCams},'Position',pos)
+            end
+            set(obj.kp3a.getAxes(),'Position',[.99 .99 .01 .01]);
+            set(obj.kp3a.getAxes(),'Visible','off')
+            arrayfun(@(X) set(X, 'Visible','off'), obj.kp3a.PlotSegments);
+            obj.isKP3Dplotted = false;
+        end
+        
+        function add3dPlot(obj)
+            % Move the other plots out of the way
+            for nAnimator = 1:obj.nCams
+                pos = [(nAnimator-1)/(obj.nCams + 1) 0 1/(obj.nCams + 1) 1];
+                set(obj.h{nAnimator},'Position',pos)
+                set(obj.h{nAnimator+obj.nCams},'Position',pos)
+            end
+            % Add the 3d plot in the right place
+            pos = [obj.nCams/(obj.nCams + 1) 0 1/(obj.nCams + 1) 1];
+            set(obj.kp3a,'Position',pos)
+            set(obj.kp3a.getAxes(),'Visible','on')
+            arrayfun(@(X) set(X, 'Visible','on'), obj.kp3a.PlotSegments);
+            obj.isKP3Dplotted = true;
         end
     end
     
@@ -485,10 +581,19 @@ classdef Label3D < Animator
                 obj.h{obj.nCams+nKPAnimator}.points.YData = squeeze(markers(obj.frameInds(obj.frame),2,:));
             end
             
-            % Run all of the update functions. 
+            
+            % Run all of the update functions.
             for nAnimator = 1:numel(obj.h)
                 update(obj.h{nAnimator})
             end
+            
+            % Update the keypoint animator
+            pts = permute(obj.points3D,[3 2 1]);
+            obj.kp3a.markers = pts;
+            obj.kp3a.markersX = pts(:,1,:);
+            obj.kp3a.markersY = pts(:,2,:);
+            obj.kp3a.markersZ = pts(:,3,:);
+            obj.kp3a.update()
         end
     end
 end

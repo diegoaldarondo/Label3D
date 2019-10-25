@@ -23,18 +23,21 @@ labelGui = Label3D(params, videos, skeleton);
 ```
 
 ## Instructions
-**right**: move forward one frameRate<br>
-**left**: move backward one frameRate<br>
-**up**: increase the frameRate<br>
-**down**: decrease the frameRate<br>
-**t**: triangulate points in current frame that have been labeled in at least two images and reproject into each image<br>
-**r**: reset gui to the first frame and remove `Animator` restrictions<br>
-**u**: reset the current frame to the initial marker positions<br>
-**z**: zoom all images out to full size<br>
-**tab**: shift the selected node by 1<br>
-**ctrl+tab** or backspace: shift the selected node by -1<br>
-**shift+s**: save data to a `.mat` file<br>
-**h**: print help messages for all `Animators`
+**right**: move forward one frameRate
+**left**: move backward one frameRate
+**up**: increase the frameRate
+**down**: decrease the frameRate
+**t**: triangulate points in current frame that have been labeled in at least two images and reproject into each image
+**r**: reset gui to the first frame and remove Animator restrictions
+**u**: reset the current frame to the initial marker positions
+**z**: Toggle zoom state
+**p**: Show 3d animation plot of the triangulated points.
+**backspace**: reset currently held node (first click and hold, then backspace to delete)
+**pageup**: Set the selectedNode to the first node
+**tab**: shift the selected node by 1
+**ctrl+tab**: shift the selected node by -1
+**h**: print help messages for all Animators
+**shift+s**: Save the data to a .mat file
 
 Written by Diego Aldarondo (2019)
 

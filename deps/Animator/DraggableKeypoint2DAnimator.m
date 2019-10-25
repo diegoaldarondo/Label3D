@@ -211,6 +211,7 @@ classdef DraggableKeypoint2DAnimator < Animator
         
         function stopdragging(obj,fig,ev)
             % Stop dragging mode
+            obj.selectedNode = nan;
             set(fig,'windowbuttonmotionfcn','')
             set(fig,'windowbuttonupfcn','')
         end
@@ -239,12 +240,24 @@ classdef DraggableKeypoint2DAnimator < Animator
                 case 'h'
                     message = obj(1).instructions;
                     fprintf(message);
+                case 'backspace'
+                    if ~isnan(obj.selectedNode)
+                        obj.deleteSelectedNode();
+                    end
 %                 case 's'
 %                     fprintf(obj(1).statusMsg,...
 %                         obj(1).frameInds(obj(1).frame),obj(1).frameRate);
                 case 'r'
                     reset(obj);
             end
+        end
+        
+        
+        function deleteSelectedNode(obj)
+            obj.points.XData(obj.selectedNode) = nan;
+            obj.points.YData(obj.selectedNode) = nan;
+            obj.stopdragging(obj.Parent,[]);
+            obj.update();
         end
     end
     
