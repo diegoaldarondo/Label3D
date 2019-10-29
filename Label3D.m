@@ -554,7 +554,6 @@ classdef Label3D < Animator
                 % those that have been triangulated, and thus labeled in at
                 % least two frames.
                 pts = permute(obj.points3D, [3 1 2]);
-                keyboard
                 allpts = reshape(pts, [], 3);
                 if redistort
                     data_2D = worldToImage(cp, cp.RotationMatrices,...
