@@ -16,10 +16,15 @@
 % t: triangulate points in current frame that have been labeled in at least two images and reproject into each image
 % r: reset gui to the first frame and remove Animator restrictions
 % u: reset the current frame to the initial marker positions
-% z: zoom all images out to full size
+% z: Toggle zoom state
+% p: Show 3d animation plot of the triangulated points. 
+% backspace: reset currently held node (first click and hold, then
+%            backspace to delete)
+% pageup: Set the selectedNode to the first node
 % tab: shift the selected node by 1
-% ctrl+tab or backspace: shift the selected node by -1
+% shift+tab: shift the selected node by -1
 % h: print help messages for all Animators
+% shift+s: Save the data to a .mat file
 clear all
 close all;
 addpath(genpath('deps'))
