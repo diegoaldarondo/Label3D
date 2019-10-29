@@ -35,7 +35,7 @@ labelGui = Label3D(params, videos, skeleton);
 **backspace**: reset currently held node (first click and hold, then backspace to delete)<br>
 **pageup**: Set the selectedNode to the first node<br>
 **tab**: shift the selected node by 1<br>
-**ctrl+tab**: shift the selected node by -1<br>
+**shift+tab**: shift the selected node by -1<br>
 **h**: print help messages for all Animators<br>
 **shift+s**: Save the data to a .mat file
 

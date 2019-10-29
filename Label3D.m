@@ -22,7 +22,7 @@ classdef Label3D < Animator
     %            backspace to delete)
     % pageup: Set the selectedNode to the first node
     % tab: shift the selected node by 1
-    % ctrl+tab: shift the selected node by -1
+    % shift+tab: shift the selected node by -1
     % h: print help messages for all Animators
     % shift+s: Save the data to a .mat file
     %
@@ -80,6 +80,9 @@ classdef Label3D < Animator
         initialMarkers
         isKP3Dplotted
         gridColor = [.7 .7 .7]
+        mainFigureColor = [0.1412 0.1412 0.1412]
+        labelPosition = [0 .5 .9 .5]
+        tablePosition = [.9 .5 .1 .5]
         instructions = ['Label3D Guide:\n'...
             'rightarrow: next frame\n' ...
             'leftarrow: previous frame\n' ...
@@ -133,7 +136,7 @@ classdef Label3D < Animator
             %       skeleton.color: nSegments x 3 matrix of RGB values
             %       skeleton.joints_idx: nSegments x 2 matrix of integers
             %           denoting directed edges between markers.
-            %   Syntax: Label3D(camparams, videos, markers, skeleton, varargin);
+            %   Syntax: Label3D(camparams, videos, skeleton, varargin);
             % User defined inputs
             
             if ~isempty(skeleton)
@@ -145,7 +148,7 @@ classdef Label3D < Animator
             end
             if isempty(obj.savePath)
                 obj.savePath = ...
-                    [datestr(now,'yyyy_mm_dd_HH_MM_SS') '_labels.mat'];
+                    [datestr(now,'yyyy_mm_dd_HH_MM_SS')];
             end
             
             % Set up Animator parameters
@@ -198,36 +201,46 @@ classdef Label3D < Animator
             obj.points3D = nan(obj.nMarkers, 3, obj.nFrames);
             obj.status = zeros(obj.nMarkers, obj.nCams, obj.nFrames);
             
-            % Link together the Animators
+            % Make images rescalable
             cellfun(@(X) set(X.getAxes(),...
                 'DataAspectRatioMode', 'auto', 'Color', 'none'), obj.h)
-%             Animator.linkAll([obj.h {obj}])
             obj.selectedNode = 1;
             
             % Style the main Figure
             addToolbarExplorationButtons(obj.Parent)
-            set(obj.Parent,'Units','Normalized','pos',[0 .5 .9 .5],...
-                'Name','Label3D GUI','NumberTitle','off','color',[0.1412 0.1412 0.1412])
+            set(obj.Parent,'Units','Normalized','pos',obj.labelPosition,...
+                'Name','Label3D GUI','NumberTitle','off',...
+                'color',obj.mainFigureColor)
            
             % Set up the 3d keypoint animator
             m = permute(obj.points3D,[3 2 1]);
+            % This hack prevents overlap between zoom callbacks in the kp
+            % animator and the VideoAnimators
             pos = [.99 .99 .01 .01];
-            obj.kp3a = Keypoint3DAnimator(m, obj.skeleton,'Position',pos,'xlim',[-150 150], 'ylim',[-150 150], 'zlim', [0 300]);
+            obj.kp3a = Keypoint3DAnimator(m, obj.skeleton,...
+                'Position',pos,'xlim',[-150 150], 'ylim',[-150 150],...
+                'zlim', [0 300]);
             obj.kp3a.frameInds = obj.frameInds;
             obj.kp3a.frame = obj.frame;
             grid(obj.kp3a.getAxes(), 'on');
-            set(obj.kp3a.getAxes(),'color',[0.1412 0.1412 0.1412],'GridColor',obj.gridColor,'CameraPosition',1.0e+03 * [-1.6835   -1.6713    0.6048],'Visible','off')
+            set(obj.kp3a.getAxes(),'color',obj.mainFigureColor,...
+                'GridColor',obj.gridColor,...
+                'CameraPosition',1.0e+03 * [-1.6835 -1.6713 0.6048],...
+                'Visible','off')
             arrayfun(@(X) set(X, 'Visible','off'), obj.kp3a.PlotSegments);
             obj.isKP3Dplotted = false;
+            
+            % Link all animators
             Animator.linkAll([obj.h {obj} {obj.kp3a}])
             
+            % Set the GUI clicked callback to the custom toggle, so that we
+            % can toggle with the keyboard without having the figure lose
+            % focus.
             zin = findall(obj.Parent,'tag','Exploration.ZoomIn');
             set(zin, 'ClickedCallback', @(~,~) obj.toggleZoomIn);
-%             zin = findall(obj.Parent,'tag','Exploration.ZoomOut');
-%             set(zin, 'ClickedCallback', @(~,~) obj.toggleZoom);
             
             % Set up the keypoint table figure
-            f = figure('Units','Normalized','pos',[.9 .5 .1 .5],'Name','Keypoint table',...
+            f = figure('Units','Normalized','pos',obj.tablePosition,'Name','Keypoint table',...
                 'NumberTitle','off');
             obj.jointsPanel = uix.Panel('Parent', f, 'Title', 'Joints',...
                 'Padding', 5,'Units','Normalized');
@@ -343,7 +356,7 @@ classdef Label3D < Animator
             obj.update()
         end
         
-        function clickImage(obj, f, ev)
+        function clickImage(obj, ~, ~)
             % Callback to image clicks (but not on nodes)
             % Pull out clicked point coordinate in image coordinates
             pt = zeros(obj.nCams,2);
@@ -510,17 +523,55 @@ classdef Label3D < Animator
         end
         
         function saveState(obj)
-            % Save data to the savePath
+            % saveState - Save data to the savePath
+            %
+            % Saves:  
+            %   status
+            %   skeleton
+            %   imageSize
+            %   cameraPoses
+            %   data_2D
+            %   data_3D
+            % for each camera to obj.savePath
             obj.checkStatus();
             obj.update();
-            points2D = obj.camPoints;
-            points3D = obj.points3D;
+            
+            % Include some metadata
             status = obj.status;
             skeleton = obj.skeleton;
             imageSize = obj.ImageSize;
             cameraPoses = obj.cameraPoses;
-            save(obj.savePath, 'points2D','points3D','status',...
-                'skeleton','imageSize','cameraPoses')
+            
+            % Reshape to dannce specifications
+            data_3D = permute(obj.points3D, [3 2 1]);
+            data_3D = reshape(data_3D, size(data_3D, 1), []);
+            
+            redistort = true; 
+            for nCam = 1:obj.nCams
+                cp = obj.cameraParams{nCam};
+                % Reproject points from 3D to 2D, applying distortion if
+                % desired. This ensures that the retained points are only
+                % those that have been triangulated, and thus labeled in at
+                % least two frames.
+                pts = permute(obj.points3D, [3 1 2]);
+                keyboard
+                allpts = reshape(pts, [], 3);
+                if redistort
+                    data_2D = worldToImage(cp, cp.RotationMatrices,...
+                        cp.TranslationVectors, allpts, 'ApplyDistortion',true);
+                else
+                    data_2D = worldToImage(cp, cp.RotationMatrices,...
+                        cp.TranslationVectors, allpts);
+                end
+                data_2D = reshape(data_2D, size(pts,1), [], 2);
+                data_2D = permute(data_2D, [1 3 2]);
+                data_2D = reshape(data_2D, size(pts,1), []);
+                
+                % Save the data
+                path = sprintf('%s_Camera_%d.mat', obj.savePath, nCam);
+                save(path, 'data_2D', 'data_3D', 'status',...
+                    'skeleton', 'imageSize', 'cameraPoses')
+            end
         end
         
         function selectNode(obj, val)
