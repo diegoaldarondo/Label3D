@@ -46,6 +46,7 @@ classdef Label3D < Animator
     %   frameInds - Indices of current subset of frames
     %   frame - Current frame number within subset
     %   frameRate - current frame rate
+    %   verbose - Print saving messages  
     %
     %   Label3D Methods:
     %   Label3D - constructor
@@ -114,6 +115,7 @@ classdef Label3D < Animator
         savePath
         kp3a
         h
+        verbose = false
     end
     
     methods
@@ -441,6 +443,7 @@ classdef Label3D < Animator
                 obj.status(:,nKPAnimator,f) = hasMoved;
                 obj.camPoints(:, nKPAnimator, :, f) = currentMarker;
             end
+            obj.saveState()
         end
         
         function keyPressCallback(obj,source,eventdata)
@@ -506,7 +509,6 @@ classdef Label3D < Animator
                 % the installation of custom keypresscallback
                 % functions in ui default modes.
                 % See matlab.uitools.internal.uimode/setCallbackFcn
-                
                 hManager = uigetmodemanager(obj.Parent);
                 matlab.graphics.internal.setListenerState(hManager.WindowListenerHandles,'off');
                 
@@ -533,8 +535,8 @@ classdef Label3D < Animator
             %   data_2D
             %   data_3D
             % for each camera to obj.savePath
-            obj.checkStatus();
-            obj.update();
+%             obj.checkStatus();
+%             obj.update();
             
             % Include some metadata
             status = obj.status;
@@ -568,6 +570,9 @@ classdef Label3D < Animator
                 
                 % Save the data
                 path = sprintf('%s_Camera_%d.mat', obj.savePath, nCam);
+                if obj.verbose
+                    fprintf('Saving to %s at %s\n',path, datestr(now,'HH:MM:SS'))
+                end
                 save(path, 'data_2D', 'data_3D', 'status',...
                     'skeleton', 'imageSize', 'cameraPoses')
             end
