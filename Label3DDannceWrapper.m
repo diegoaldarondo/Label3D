@@ -1,4 +1,4 @@
-function h = Label3DDannceWrapper(basePath, calibOrder, skeletonPath)
+function h = Label3DDannceWrapper(basePath, calibOrder, skeletonPath, varargin)
 %Label3DDanceWrapper - Prepare Dannce data for labeling. 
 %
 %Inputs:
@@ -7,8 +7,6 @@ function h = Label3DDannceWrapper(basePath, calibOrder, skeletonPath)
 %   calibOrder - Vector denoting the matching of calibration files to video
 %       files
 %   skeletonPath - Path to skeleton structure. 
-    
-    % Pathing 
     dataPath = fullfile(basePath,'labeling/imdir');
     matchedFramesPath = fullfile(basePath,'data');
     calibrationPath = fullfile(basePath,'calibration');
@@ -55,5 +53,5 @@ function h = Label3DDannceWrapper(basePath, calibOrder, skeletonPath)
     skeleton = load(skeletonPath);
     
     %% Open the GUI using the frames from the base path 
-    h = Label3D(cameraParams, videos, skeleton);
+    h = Label3D(cameraParams, videos, skeleton, varargin{:});
 end
