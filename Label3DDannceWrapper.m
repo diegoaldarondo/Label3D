@@ -40,7 +40,7 @@ function h = Label3DDannceWrapper(basePath, calibOrder, skeletonPath, varargin)
     for nVideo = 1:numel(videos)
         videos{nVideo} = cat(4, im{nVideo:nCameras:end});
     end
-    
+   
     % Load in the calibration data
     calib = dir([calibrationPath '/*.mat']);
     calib = calib(calibOrder);
@@ -50,6 +50,19 @@ function h = Label3DDannceWrapper(basePath, calibOrder, skeletonPath, varargin)
         disp(calib(nCalib).name)
         cameraParams{nCalib} = load(calibFile);
     end
+    
+    % Undistort images in each video
+    for nCamera = 1:numel(videos)
+        params = cameraParams{nCamera};
+        camParams = cameraParameters('IntrinsicMatrix', params.K,...
+            'RadialDistortion',params.RDistort,'TangentialDistortion', params.TDistort);
+        for nImage = 1:size(videos{nCamera},4)
+            distIm = videos{nCamera}(:,:,:,nImage);
+            videos{nCamera}(:,:,:,nImage) = undistortImage(distIm, camParams);
+        end
+    end
+    
+    % Load in the skeleton
     skeleton = load(skeletonPath);
     
     %% Open the GUI using the frames from the base path 
