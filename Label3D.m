@@ -172,7 +172,9 @@ classdef Label3D < Animator
             for i = 1:obj.nCams
                 pos = [(i-1)/obj.nCams 0 1/obj.nCams 1];
                 obj.h{i} = VideoAnimator(videos{i}, 'Position', pos);
-                set(obj.h{i}.getAxes(),'XTick',[],'YTick',[]);
+                ax = obj.h{i}.getAxes();
+                ax.Toolbar.Visible = 'off';
+                set(ax,'XTick',[],'YTick',[]);
                 set(obj.h{i}.img,'ButtonDownFcn',@obj.clickImage);
             end
             
@@ -192,8 +194,10 @@ classdef Label3D < Animator
                 obj.h{obj.nCams + i} = ...
                     DraggableKeypoint2DAnimator(obj.markers{i}, obj.skeleton,...
                     'Axes', obj.h{i}.getAxes());
-                xlim(obj.h{obj.nCams + i}.getAxes(), [1 obj.ImageSize(2)])
-                ylim(obj.h{obj.nCams + i}.getAxes(), [1 obj.ImageSize(1)])
+                ax = obj.h{obj.nCams + i}.getAxes();
+                ax.Toolbar.Visible = 'off';
+                xlim(ax, [1 obj.ImageSize(2)])
+                ylim(ax, [1 obj.ImageSize(1)])
             end
             
             % Initialize data and accounting matrices
