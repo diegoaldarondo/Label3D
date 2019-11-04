@@ -162,6 +162,8 @@ classdef Label3D < Animator
             obj.frameInds = 1:obj.nFrames;
             %             obj.nMarkers = size(markers{1},3);
             obj.nMarkers = numel(unique(obj.skeleton.joints_idx(:)));
+            obj.savePath = sprintf('%s%sCamera_', obj.savePath,...
+                datestr(now,'yyyy_mm_dd_HH_MM_SS'));
             
             % Set up the cameras
             obj.nCams = numel(camparams);
@@ -593,9 +595,9 @@ classdef Label3D < Animator
                 data_2D = reshape(data_2D, size(pts,1), []);
                 
                 % Save the data
-                path = sprintf('%s%sCamera_%d.mat', obj.savePath, datestr(now,'yyyy_mm_dd_HH_MM_SS'), nCam);
+                path = sprintf('%s%d.mat', obj.savePath, nCam);
                 if obj.verbose
-                    fprintf('Saving to %s at %s\n',path, datestr(now,'HH:MM:SS'))
+                    fprintf('Saving to %s at %s\n', path, datestr(now,'HH:MM:SS'))
                 end
                 save(path, 'data_2D', 'data_3D', 'status',...
                     'skeleton', 'imageSize', 'cameraPoses')
