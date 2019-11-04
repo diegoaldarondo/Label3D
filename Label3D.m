@@ -116,6 +116,7 @@ classdef Label3D < Animator
         kp3a
         h
         verbose = false
+        undistortedImages = false
     end
     
     methods
@@ -347,8 +348,15 @@ classdef Label3D < Animator
                 translation = camParam.TranslationVectors;
                 worldPoints = obj.points3D(jointIds, :, frame);
                 if ~isempty(worldPoints)
-                    obj.camPoints(jointIds, nCam, :, frame) = ...
-                        worldToImage(camParam, rotation, translation, worldPoints);
+                    if obj.undistortedImages
+                        obj.camPoints(jointIds, nCam, :, frame) = ...
+                            worldToImage(camParam, rotation, translation,...
+                            worldPoints);
+                    else
+                        obj.camPoints(jointIds, nCam, :, frame) = ...
+                            worldToImage(camParam, rotation, translation,...
+                            worldPoints, 'ApplyDistortion', true);
+                    end
                 end
             end
         end
@@ -403,8 +411,16 @@ classdef Label3D < Animator
             % Returns the corresponding pointTrack object for particular
             % frames, joint IDs, and cameras.
             viewIds = find(camIds);
-            pt = pointTrack(viewIds,...
-                squeeze(obj.camPoints(jointId, viewIds, :, frame)));
+            imPts = squeeze(obj.camPoints(jointId, viewIds, :, frame));
+            
+            % Undistort the points if needed
+            if ~obj.undistortedImages 
+                for nCam = 1:numel(viewIds)
+                    params = obj.cameraParams{viewIds(nCam)};
+                    imPts(nCam,:) = undistortPoints(imPts(nCam,:), params);
+                end
+            end
+            pt = pointTrack(viewIds, imPts);
         end
         
         function plotCameras(obj)
@@ -529,18 +545,21 @@ classdef Label3D < Animator
         end
         
         function saveState(obj)
-            % saveState - Save data to the savePath
+            % saveState - Save data for each camera to the savePath
+            %   Saves one .mat file for each camera with the format string 
+            %   sprintf('%sCamera_%d', obj.savePath, nCam)
             %
-            % Saves:  
-            %   status
-            %   skeleton
-            %   imageSize
-            %   cameraPoses
-            %   data_2D
-            %   data_3D
-            % for each camera to obj.savePath
-%             obj.checkStatus();
-%             obj.update();
+            % Saved variables include:  
+            %   status - Logical denoting whether each keypoint has been
+            %            moved
+            %   skeleton - Digraph denoting animal skeleton
+            %   imageSize - Image dimensions
+            %   cameraPoses - World poses of each camera
+            %   data_2D - Points in image coordinates - if images were 
+            %             distorted, the points will also be distorted.
+            %             If images were undistorted, the points will also
+            %             be undistorted. 
+            %   data_3D - Points in world coordinates.
             
             % Include some metadata
             status = obj.status;
@@ -552,7 +571,6 @@ classdef Label3D < Animator
             data_3D = permute(obj.points3D, [3 2 1]);
             data_3D = reshape(data_3D, size(data_3D, 1), []);
             
-            redistort = true; 
             for nCam = 1:obj.nCams
                 cp = obj.cameraParams{nCam};
                 % Reproject points from 3D to 2D, applying distortion if
@@ -561,7 +579,7 @@ classdef Label3D < Animator
                 % least two frames.
                 pts = permute(obj.points3D, [3 1 2]);
                 allpts = reshape(pts, [], 3);
-                if redistort
+                if ~obj.undistortedImages
                     data_2D = worldToImage(cp, cp.RotationMatrices,...
                         cp.TranslationVectors, allpts, 'ApplyDistortion',true);
                 else
@@ -573,7 +591,7 @@ classdef Label3D < Animator
                 data_2D = reshape(data_2D, size(pts,1), []);
                 
                 % Save the data
-                path = sprintf('%s_Camera_%d.mat', obj.savePath, nCam);
+                path = sprintf('%sCamera_%d.mat', obj.savePath, nCam);
                 if obj.verbose
                     fprintf('Saving to %s at %s\n',path, datestr(now,'HH:MM:SS'))
                 end

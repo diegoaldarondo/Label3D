@@ -1,4 +1,4 @@
-function h = Label3DDannceWrapper(basePath, calibOrder, skeletonPath, varargin)
+function h = Label3DDannceWrapper(basePath, calibOrder, skeletonPath, originalImageSize, varargin)
 %Label3DDanceWrapper - Prepare Dannce data for labeling. 
 %
 %Inputs:
@@ -12,7 +12,7 @@ function h = Label3DDannceWrapper(basePath, calibOrder, skeletonPath, varargin)
     calibrationPath = fullfile(basePath,'calibration');
 
     % Find images in image directory
-    fn = dir([dataPath '/*.png']);
+    fn = dir(fullfile(dataPath, '*.png'));
     nImages = numel(fn);
     
     % Extract sampleId from image names
@@ -30,6 +30,20 @@ function h = Label3DDannceWrapper(basePath, calibOrder, skeletonPath, varargin)
     for nImage = 1:nImages
         filePath = fullfile(fn(nImage).folder, fn(nImage).name);
         im{nImage} = imread(filePath);
+        
+        % Check how much padding is needed
+        iOrig = originalImageSize(1);
+        iNew = size(im{nImage}, 1);
+        iPad = (iOrig - iNew)/2;
+        jOrig = originalImageSize(2);
+        jNew = size(im{nImage}, 2);
+        jPad = (jOrig - jNew)/2;
+        if ~(floor(iPad)==iPad) || ~(floor(jPad)==jPad)
+            warning('Invalid pad values: Check image sizes')
+        end
+
+        % Pad the image to fit the original image size
+        im{nImage} = padarray(im{nImage},[iPad, jPad], 0, 'both');
     end
     
     % Find the number of cameras
@@ -42,7 +56,7 @@ function h = Label3DDannceWrapper(basePath, calibOrder, skeletonPath, varargin)
     end
    
     % Load in the calibration data
-    calib = dir([calibrationPath '/*.mat']);
+    calib = dir(fullfile(calibrationPath, '*.mat'));
     calib = calib(calibOrder);
     cameraParams = cell(numel(calib),1);
     for nCalib = 1:numel(calib)
@@ -51,16 +65,18 @@ function h = Label3DDannceWrapper(basePath, calibOrder, skeletonPath, varargin)
         cameraParams{nCalib} = load(calibFile);
     end
     
-    % Undistort images in each video
-    for nCamera = 1:numel(videos)
-        params = cameraParams{nCamera};
-        camParams = cameraParameters('IntrinsicMatrix', params.K,...
-            'RadialDistortion',params.RDistort,'TangentialDistortion', params.TDistort);
-        for nImage = 1:size(videos{nCamera},4)
-            distIm = videos{nCamera}(:,:,:,nImage);
-            videos{nCamera}(:,:,:,nImage) = undistortImage(distIm, camParams);
-        end
-    end
+%     % Undistort images in each video
+%     for nCamera = 1:numel(videos)
+%         fprintf('Undistorting camera %d\n', nCamera)
+%         params = cameraParams{nCamera};
+%         camParams = cameraParameters('IntrinsicMatrix', params.K,...
+%             'RadialDistortion',params.RDistort,'TangentialDistortion',...
+%             params.TDistort,'ImageSize', originalImageSize(1:2));
+%         for nImage = 1:size(videos{nCamera}, 4)
+%             distIm = videos{nCamera}(:,:,:,nImage);
+%             videos{nCamera}(:,:,:,nImage) = undistortImage(distIm, camParams);
+%         end
+%     end
     
     % Load in the skeleton
     skeleton = load(skeletonPath);
