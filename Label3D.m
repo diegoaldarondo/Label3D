@@ -46,6 +46,12 @@ classdef Label3D < Animator
     %   frameInds - Indices of current subset of frames
     %   frame - Current frame number within subset
     %   frameRate - current frame rate
+    %   undistortedImages - If true, treat input images as undistorted
+    %                       (Default false)
+    %   savePath - Path in which to save output. The output files are of 
+    %              the form 
+    %              path = sprintf('%s%sCamera_%d.mat', obj.savePath,...
+    %                       datestr(now,'yyyy_mm_dd_HH_MM_SS'), nCam);
     %   verbose - Print saving messages  
     %
     %   Label3D Methods:
@@ -112,7 +118,7 @@ classdef Label3D < Animator
         nCams
         jointsPanel
         jointsControl
-        savePath
+        savePath = ''
         kp3a
         h
         verbose = false
@@ -148,10 +154,6 @@ classdef Label3D < Animator
             
             if ~isempty(varargin)
                 set(obj,varargin{:});
-            end
-            if isempty(obj.savePath)
-                obj.savePath = ...
-                    [datestr(now,'yyyy_mm_dd_HH_MM_SS')];
             end
             
             % Set up Animator parameters
@@ -547,7 +549,7 @@ classdef Label3D < Animator
         function saveState(obj)
             % saveState - Save data for each camera to the savePath
             %   Saves one .mat file for each camera with the format string 
-            %   sprintf('%sCamera_%d', obj.savePath, nCam)
+            %   path = sprintf('%s%sCamera_%d.mat', obj.savePath, datestr(now,'yyyy_mm_dd_HH_MM_SS'), nCam);
             %
             % Saved variables include:  
             %   status - Logical denoting whether each keypoint has been
@@ -591,7 +593,7 @@ classdef Label3D < Animator
                 data_2D = reshape(data_2D, size(pts,1), []);
                 
                 % Save the data
-                path = sprintf('%sCamera_%d.mat', obj.savePath, nCam);
+                path = sprintf('%s%sCamera_%d.mat', obj.savePath, datestr(now,'yyyy_mm_dd_HH_MM_SS'), nCam);
                 if obj.verbose
                     fprintf('Saving to %s at %s\n',path, datestr(now,'HH:MM:SS'))
                 end
@@ -653,12 +655,10 @@ classdef Label3D < Animator
                 obj.h{obj.nCams+nKPAnimator}.markers = markers;
                 obj.h{obj.nCams+nKPAnimator}.markersX = squeeze(markers(:,1,:));
                 obj.h{obj.nCams+nKPAnimator}.markersY = squeeze(markers(:,2,:));
-                
                 obj.h{obj.nCams+nKPAnimator}.points.XData = squeeze(markers(obj.frameInds(obj.frame),1,:));
                 obj.h{obj.nCams+nKPAnimator}.points.YData = squeeze(markers(obj.frameInds(obj.frame),2,:));
             end
-            
-            
+                      
             % Run all of the update functions.
             for nAnimator = 1:numel(obj.h)
                 update(obj.h{nAnimator})
