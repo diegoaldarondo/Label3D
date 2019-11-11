@@ -548,6 +548,32 @@ classdef Label3D < Animator
             end
         end
         
+        function loadState(obj, files)
+            % loadState - Load (triangulated) data from previous sessions.
+            %
+            % Syntax: obj.loadState(files)
+            %
+            % Inputs: files - cell array of paths to .mat files generated
+            %                 by Label3D.saveState()
+                         
+            % Load the files and store metadata
+            data = cellfun(@load, files);      
+            obj.status = data(1).status;
+            
+            % Load the 3d points
+            pts3d = data(1).data_3D;
+            pts3d = reshape(pts3d, size(pts3d,1), 3, []);
+            obj.points3D = permute(pts3d, [3 2 1]);
+            
+            % Load the camera points
+            for nFile = 1:numel(files)
+                pts = data(nFile).data_2D;
+                pts = reshape(pts, size(pts,1), 2, []);
+                pts = permute(pts, [3 2 1]);
+                obj.camPoints(:,nFile,:,:) = pts;
+            end
+        end
+        
         function saveState(obj)
             % saveState - Save data for each camera to the savePath
             %   Saves one .mat file for each camera with the format string 
