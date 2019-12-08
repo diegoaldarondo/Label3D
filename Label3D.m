@@ -548,6 +548,27 @@ classdef Label3D < Animator
             end
         end
         
+        function loadFrom3D(obj, pts3d)
+            % loadState - Load (triangulated) 3d data and visualize.
+            %
+            % Syntax: obj.loadFrom3D(files)
+            %
+            % Inputs: pts3d - NFrames x 3 x nMarkers 3d data.     
+            
+            % Load the 3d points
+            pts3d = reshape(pts3d, size(pts3d,1), 3, []);
+            obj.points3D = permute(pts3d, [3 2 1]);
+            obj.status = ~isnan(obj.points3D);
+            
+            % Reproject the camera points
+            for nFrame = 1:size(obj.points3D,3)
+                obj.reprojectPoints(nFrame);
+            end
+
+            obj.checkStatus();
+            obj.update()
+        end
+        
         function loadState(obj, files)
             % loadState - Load (triangulated) data from previous sessions.
             %
