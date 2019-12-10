@@ -62,7 +62,8 @@ classdef Keypoint3DAnimator < Animator
             %       skeleton.joints_idx: nSegments x 2 matrix of integers
             %           denoting directed edges between markers. 
             %   Syntax: Keypoint3DAnimator(markers, skeleton, varargin);
-            
+%             obj@Animator(varargin{:});
+
             % Check inputs
             validateattributes(markers,{'numeric'},{'3d'})
             validateattributes(skeleton,{'struct'},{})
