@@ -82,5 +82,13 @@ function h = Label3DDannceWrapper(basePath, calibOrder, skeletonPath, originalIm
     skeleton = load(skeletonPath);
     
     %% Open the GUI using the frames from the base path 
-    h = Label3D(cameraParams, videos, skeleton, varargin{:});
+    if ~isempty(varargin)
+        if strcmp(varargin{1}, 'View')
+            h = View3D(cameraParams, videos, skeleton, varargin(2:end));
+        else
+            h = Label3D(cameraParams, videos, skeleton, varargin{:});
+        end
+    else
+        h = Label3D(cameraParams, videos, skeleton, varargin{:});
+    end
 end
