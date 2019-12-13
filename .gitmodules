@@ -1,0 +1,3 @@
+[submodule "deps/Animator"]
+	path = deps/Animator
+	url = git@github.com:diegoaldarondo/Animator.git

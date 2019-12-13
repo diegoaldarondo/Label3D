@@ -27,7 +27,7 @@
 % shift+s: Save the data to a .mat file
 clear all
 close all;
-addpath(genpath('deps'))
+% addpath(genpath('deps'))
 
 %% Load in the calibration parameter data
 params3 = load('/home/diego/cluster/Diego/code/DANNCE/demo/calibrd18_black6_mouseone_green/calibration/hires_cam1_params.mat');
@@ -63,7 +63,7 @@ nMarkers = 9;
 nFrames = size(videos{1},4);
 
 % Set up the skeleton
-C = othercolor('RdYlBu_11b',nMarkers-1);
+C = lines(nMarkers - 1);
 skeleton.color = C([1 8 5 5 2 7 3 6],:);
 skeleton.joints_idx = [1 2; 1 3; 1 4; 4 5; 4 6 ; 4 7; 5 8; 5 9];
 skeleton.joint_names = {'Nose','Ear R', 'Ear L', 'Spine M','Tail','R Forepaw','L Forepaw','R Hindpaw','L Hindpaw'};
