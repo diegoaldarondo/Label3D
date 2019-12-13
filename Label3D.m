@@ -140,14 +140,14 @@ classdef Label3D < Animator
             %               t - Translation vector
             %   videos: Cell array of videos. Videos are assumed to be
             %           undistorted and frame matched beforehand.
-            %   markers: Temporary
             %   skeleton: Structure with two fields:
             %       skeleton.color: nSegments x 3 matrix of RGB values
             %       skeleton.joints_idx: nSegments x 2 matrix of integers
             %           denoting directed edges between markers.
             %   Syntax: Label3D(camparams, videos, skeleton, varargin);
             % User defined inputs
-            
+            [animatorArgs, ~, varargin] = parseClassArgs('Animator', varargin{:});
+            obj@Animator(animatorArgs{:});
             if ~isempty(skeleton)
                 obj.skeleton = skeleton;
             end
@@ -160,7 +160,6 @@ classdef Label3D < Animator
             obj.nFrames = size(videos{1},4);
             obj.origNFrames = obj.nFrames;
             obj.frameInds = 1:obj.nFrames;
-            %             obj.nMarkers = size(markers{1},3);
             obj.nMarkers = numel(obj.skeleton.joint_names);
             obj.savePath = sprintf('%s%sCamera_', obj.savePath,...
                 datestr(now,'yyyy_mm_dd_HH_MM_SS'));
@@ -177,7 +176,7 @@ classdef Label3D < Animator
             for i = 1:obj.nCams
                 pos = [(i-1)/obj.nCams 0 1/obj.nCams 1];
                 obj.h{i} = VideoAnimator(videos{i}, 'Position', pos);
-                ax = obj.h{i}.getAxes();
+                ax = obj.h{i}.Axes;
                 ax.Toolbar.Visible = 'off';
                 set(ax,'XTick',[],'YTick',[]);
                 set(obj.h{i}.img,'ButtonDownFcn',@obj.clickImage);
@@ -191,15 +190,15 @@ classdef Label3D < Animator
                     obj.markers{i} = nan(obj.origNFrames, 2, obj.nMarkers);
                 end
             else
-                obj.initialMarkers = markers;
+                obj.initialMarkers = obj.markers;
             end
             
             % Make the Draggable Keypoint Animators
             for i = 1:obj.nCams
                 obj.h{obj.nCams + i} = ...
                     DraggableKeypoint2DAnimator(obj.markers{i}, obj.skeleton,...
-                    'Axes', obj.h{i}.getAxes());
-                ax = obj.h{obj.nCams + i}.getAxes();
+                    'Axes', obj.h{i}.Axes);
+                ax = obj.h{obj.nCams + i}.Axes;
                 ax.Toolbar.Visible = 'off';
                 xlim(ax, [1 obj.ImageSize(2)])
                 ylim(ax, [1 obj.ImageSize(1)])
@@ -213,7 +212,7 @@ classdef Label3D < Animator
             obj.status = zeros(obj.nMarkers, obj.nCams, obj.nFrames);
             
             % Make images rescalable
-            cellfun(@(X) set(X.getAxes(),...
+            cellfun(@(X) set(X.Axes,...
                 'DataAspectRatioMode', 'auto', 'Color', 'none'), obj.h)
             obj.selectedNode = 1;
             
@@ -224,22 +223,7 @@ classdef Label3D < Animator
                 'color',obj.mainFigureColor)
            
             % Set up the 3d keypoint animator
-            m = permute(obj.points3D,[3 2 1]);
-            % This hack prevents overlap between zoom callbacks in the kp
-            % animator and the VideoAnimators
-            pos = [.99 .99 .01 .01];
-            obj.kp3a = Keypoint3DAnimator(m, obj.skeleton,...
-                'Position',pos,'xlim',[-150 150], 'ylim',[-150 150],...
-                'zlim', [0 300]);
-            obj.kp3a.frameInds = obj.frameInds;
-            obj.kp3a.frame = obj.frame;
-            grid(obj.kp3a.getAxes(), 'on');
-            set(obj.kp3a.getAxes(),'color',obj.mainFigureColor,...
-                'GridColor',obj.gridColor,...
-                'CameraPosition',1.0e+03 * [-1.6835 -1.6713 0.6048],...
-                'Visible','off')
-            arrayfun(@(X) set(X, 'Visible','off'), obj.kp3a.PlotSegments);
-            obj.isKP3Dplotted = false;
+            obj.setupKeypoint3dAnimator()
             
             % Link all animators
             Animator.linkAll([obj.h {obj} {obj.kp3a}])
@@ -251,14 +235,7 @@ classdef Label3D < Animator
             set(zin, 'ClickedCallback', @(~,~) obj.toggleZoomIn);
             
             % Set up the keypoint table figure
-            f = figure('Units','Normalized','pos',obj.tablePosition,'Name','Keypoint table',...
-                'NumberTitle','off');
-            obj.jointsPanel = uix.Panel('Parent', f, 'Title', 'Joints',...
-                'Padding', 5,'Units','Normalized');
-            obj.jointsControl = uicontrol(obj.jointsPanel, 'Style',...
-                'listbox', 'String', skeleton.joint_names,...
-                'Units','Normalized','Callback',@(h,~,~) obj.selectNode(h.Value));
-            set(obj.Parent.Children(end), 'Visible','off')
+            obj.setUpKeypointTable();
         end
         
         function [c, orientations, locations] = loadCamParams(obj, camparams)
@@ -303,8 +280,8 @@ classdef Label3D < Animator
         function zoomOut(obj)
             % Zoom all images out to their maximum sizes.
             for i = 1:obj.nCams
-                xlim(obj.h{obj.nCams + i}.getAxes(), [1 obj.ImageSize(2)])
-                ylim(obj.h{obj.nCams + i}.getAxes(), [1 obj.ImageSize(1)])
+                xlim(obj.h{obj.nCams + i}.Axes, [1 obj.ImageSize(2)])
+                ylim(obj.h{obj.nCams + i}.Axes, [1 obj.ImageSize(1)])
             end
         end
         
@@ -667,8 +644,8 @@ classdef Label3D < Animator
                 set(obj.h{nAnimator},'Position',pos)
                 set(obj.h{nAnimator+obj.nCams},'Position',pos)
             end
-            set(obj.kp3a.getAxes(),'Position',[.99 .99 .01 .01]);
-            set(obj.kp3a.getAxes(),'Visible','off')
+            set(obj.kp3a.Axes,'Position',[.99 .99 .01 .01]);
+            set(obj.kp3a.Axes,'Visible','off')
             arrayfun(@(X) set(X, 'Visible','off'), obj.kp3a.PlotSegments);
             obj.isKP3Dplotted = false;
         end
@@ -683,15 +660,44 @@ classdef Label3D < Animator
             % Add the 3d plot in the right place
             pos = [obj.nCams/(obj.nCams + 1) 0 1/(obj.nCams + 1) 1];
             set(obj.kp3a,'Position',pos)
-            set(obj.kp3a.getAxes(),'Visible','on')
+            set(obj.kp3a.Axes,'Visible','on')
             arrayfun(@(X) set(X, 'Visible','on'), obj.kp3a.PlotSegments);
             obj.isKP3Dplotted = true;
+        end
+        
+        function setUpKeypointTable(obj)
+            f = figure('Units','Normalized','pos',obj.tablePosition,'Name','Keypoint table',...
+                'NumberTitle','off');
+            obj.jointsPanel = uix.Panel('Parent', f, 'Title', 'Joints',...
+                'Padding', 5,'Units','Normalized');
+            obj.jointsControl = uicontrol(obj.jointsPanel, 'Style',...
+                'listbox', 'String', obj.skeleton.joint_names,...
+                'Units','Normalized','Callback',@(h,~,~) obj.selectNode(h.Value));
+            set(obj.Parent.Children(end), 'Visible','off')
         end
     end
     
     methods (Access = private)
         function reset(obj)
             restrict(obj, 1:obj.origNFrames)
+        end
+        
+        function setupKeypoint3dAnimator(obj)
+            m = permute(obj.points3D,[3 2 1]);
+            % This hack prevents overlap between zoom callbacks in the kp
+            % animator and the VideoAnimators
+            pos = [.99 .99 .01 .01];
+            obj.kp3a = Keypoint3DAnimator(m, obj.skeleton,'Position',pos);
+            obj.kp3a.frameInds = obj.frameInds;
+            obj.kp3a.frame = obj.frame;
+            grid(obj.kp3a.Axes, 'on');
+            set(obj.kp3a.Axes,'color',obj.mainFigureColor,...
+                'GridColor',obj.gridColor,...
+                'CameraPosition',1.0e+03 * [-1.6835 -1.6713 0.6048],...
+                'Visible','off','Xlim',[-150 150], 'Ylim',[-150 150],...
+                'Zlim', [0 300])
+            arrayfun(@(X) set(X, 'Visible','off'), obj.kp3a.PlotSegments);
+            obj.isKP3Dplotted = false;
         end
     end
     

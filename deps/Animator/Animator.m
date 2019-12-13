@@ -49,20 +49,12 @@ classdef (Abstract) Animator < FlexChart
     methods
         function obj = Animator(varargin)
             %Animator - constructor for Animator abstract class.
-            
-            obj@FlexChart(varargin{:});
+            [flexChartArgs, ~, varargin] = parseClassArgs('FlexChart', varargin{:});
+            obj@FlexChart(flexChartArgs{:});
             
             % User defined inputs
             if ~isempty(varargin)
-                for i = 1:numel(varargin)
-                    if strcmp(varargin{i},'Axes')
-                        varargin(i:i+1) = [];
-                        break
-                    end
-                end
-                if ~isempty(varargin)
-                    set(obj,varargin{:});
-                end
+               set(obj,varargin{:});
             end
             
             % Set up the figure and callback function
@@ -80,10 +72,6 @@ classdef (Abstract) Animator < FlexChart
         function delete(obj)
             delete(obj.Axes);
         end % delete obj
-        
-        function axes = getAxes( obj )
-            axes = obj.Axes;
-        end
         
         function frame = get.frame( obj )
             frame = obj.frame;
@@ -207,8 +195,7 @@ classdef (Abstract) Animator < FlexChart
         update(obj)
     end
     
-    methods (Static)      
-        
+    methods (Static)  
         function linkAll(h)
             for i = 1:numel(h)
                 h{i}.links = h;

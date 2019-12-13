@@ -20,7 +20,7 @@ classdef FlexChart < matlab.mixin.SetGet
         Visible        
     end % properties ( Dependent )
     
-    properties ( Access = protected )
+    properties ( Access = public )
         % Graphics peer to the chart.
         Axes
     end % properties ( Access = protected )
@@ -28,14 +28,23 @@ classdef FlexChart < matlab.mixin.SetGet
     methods
         
         function obj = FlexChart(varargin)
-            % Create the chart peer axes.
-            if ~isempty(varargin)
-                set(obj, varargin{:})
-            end
-            if isempty(obj.Axes)
+            % Create the chart peer axes first. Determine whether an axis
+            % has been passed as a Name Value pair. If not, construct a new
+            % axis. 
+            names = varargin(cellfun(@ischar, varargin));
+            classInds = repelem(contains(names, 'Axes'),1,2);
+            axesArgs = varargin(classInds);
+            if any(classInds)
+                obj.Axes = axesArgs{2};
+            else
                 obj.Axes = axes( 'Parent', [], ...
                     'DeleteFcn', @obj.onAxesDeleted, ...
                     'HandleVisibility', 'on' );
+            end
+            
+            % Set any dependent properties
+            if ~isempty(varargin)
+                set(obj, varargin{:})
             end
         end % constructor
         
@@ -47,6 +56,9 @@ classdef FlexChart < matlab.mixin.SetGet
         end % destructor
         
         % Get/set methods.
+        function ax = get.Axes( obj )
+            ax = obj.Axes;
+        end
         
         function p = get.Parent( obj )
             p = obj.Axes.Parent;

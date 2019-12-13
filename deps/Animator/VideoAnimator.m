@@ -26,8 +26,6 @@ classdef VideoAnimator < Animator
             'h: help guide\n' ...
             'r: reset\n' ...
             's: print current frame and rate\n'];
-        MarkerSize = 30
-        LineWidth = 3
     end
     
     properties (Access = public)
@@ -37,7 +35,8 @@ classdef VideoAnimator < Animator
     
     methods
         function obj = VideoAnimator(V, varargin)
-            % User defined inputs
+            [animatorArgs, ~, varargin] = parseClassArgs('Animator', varargin{:});
+            obj@Animator(animatorArgs{:});
             if ~isempty(V)
                 obj.V = V;
                 % Handle 3 dimensional matrices as grayscale videos. 

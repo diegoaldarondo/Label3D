@@ -35,9 +35,6 @@ classdef Keypoint3DAnimator < Animator
     end
     
     properties (Access = public)
-        xlim
-        ylim
-        zlim
         camPosition = [1.5901e+03 -1.7910e+03 1.0068e+03];
         MarkerSize = 20;
         LineWidth = 3;
@@ -61,8 +58,9 @@ classdef Keypoint3DAnimator < Animator
             %       skeleton.color: nSegments x 3 matrix of RGB values
             %       skeleton.joints_idx: nSegments x 2 matrix of integers
             %           denoting directed edges between markers. 
-            %   Syntax: Keypoint3DAnimator(markers, skeleton, varargin);
-%             obj@Animator(varargin{:});
+            %   Syntax: Keypoint3DAnimator(markers, skeleton, varargin)
+            [animatorArgs, ~, varargin] = parseClassArgs('Animator', varargin{:});
+            obj@Animator(animatorArgs{:});
 
             % Check inputs
             validateattributes(markers,{'numeric'},{'3d'})
@@ -81,25 +79,11 @@ classdef Keypoint3DAnimator < Animator
             end
             
             % User defined inputs
-            if ~isempty(varargin)
+            if ~isempty(varargin)       
                 set(obj,varargin{:});
             end
             
-            % This can be improved through an Animator check for obj.Axes
-            % modifications in the Animator constructor.
-            if isempty(obj.xlim)
-                obj.xlim = [min(min(obj.markers(:,1,:))) max(max(obj.markers(:,1,:)))];
-            end
-            if isempty(obj.ylim)
-                obj.ylim = [min(min(obj.markers(:,2,:))) max(max(obj.markers(:,2,:)))];
-            end
-            if isempty(obj.zlim)
-                obj.zlim = [min(min(obj.markers(:,3,:))) max(max(obj.markers(:,3,:)))];
-            end
-            set(obj.Axes,'xlim',obj.xlim,'ylim',obj.ylim,'zlim',obj.zlim);
-            
             % Private constructions
-            
             obj.nFrames = size(obj.markers,1);
             if isempty(obj.frameInds)
                 obj.frameInds = 1:obj.nFrames;
