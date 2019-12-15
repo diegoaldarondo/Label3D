@@ -100,6 +100,7 @@ classdef Label3D < Animator
             'shift: set frame rate to 250\n' ...
             'h: help guide\n'];
         statusMsg = 'Label3D:\nFrame: %d\nframeRate: %d\n'
+        hiddenAxesPos = [.99 .99 .01 .01]
     end
     
     properties (Access = public)
@@ -147,7 +148,7 @@ classdef Label3D < Animator
             %   Syntax: Label3D(camparams, videos, skeleton, varargin);
             % User defined inputs
             [animatorArgs, ~, varargin] = parseClassArgs('Animator', varargin{:});
-            obj@Animator(animatorArgs{:});
+            obj@Animator(animatorArgs{:},'Visible','off');
             if ~isempty(skeleton)
                 obj.skeleton = skeleton;
             end
@@ -361,14 +362,12 @@ classdef Label3D < Animator
             
             % Pull out clicked point in figure coordinates. 
             fpt = obj.Parent.CurrentPoint;
+            [goodX, goodY] = deal(zeros(obj.nCams, 1));
             for nCam = 1:obj.nCams
                 pos = obj.h{nCam}.Position;
                 goodX(nCam) = pos(1) <= fpt(1) && fpt(1) < (pos(1) + pos(3));
                 goodY(nCam) = pos(2) <= fpt(2) && fpt(2) < (pos(2) + pos(4));    
             end
-%             % Identify frame in which click occured.
-%             goodX = (pt(:,1) >= 1) & (pt(:,1) <= obj.ImageSize(2));
-%             goodY = (pt(:,2) >= 1) & (pt(:,2) <= obj.ImageSize(1));
             cam = find(goodX & goodY);
             
             % Throw a warning if there are more than one good camera.
@@ -644,7 +643,7 @@ classdef Label3D < Animator
                 set(obj.h{nAnimator},'Position',pos)
                 set(obj.h{nAnimator+obj.nCams},'Position',pos)
             end
-            set(obj.kp3a.Axes,'Position',[.99 .99 .01 .01]);
+            set(obj.kp3a.Axes,'Position', obj.hiddenAxesPos);
             set(obj.kp3a.Axes,'Visible','off')
             arrayfun(@(X) set(X, 'Visible','off'), obj.kp3a.PlotSegments);
             obj.isKP3Dplotted = false;
@@ -657,10 +656,12 @@ classdef Label3D < Animator
                 set(obj.h{nAnimator},'Position',pos)
                 set(obj.h{nAnimator+obj.nCams},'Position',pos)
             end
+            pad = .05;
             % Add the 3d plot in the right place
-            pos = [obj.nCams/(obj.nCams + 1) 0 1/(obj.nCams + 1) 1];
-            set(obj.kp3a,'Position',pos)
-            set(obj.kp3a.Axes,'Visible','on')
+            pos = [obj.nCams/(obj.nCams + 1)+pad pad 1/(obj.nCams + 1)-2*pad 1-2*pad];
+            lims = [-400 400];
+            set(obj.kp3a.Axes,'Position',pos,'Visible','on',...
+                'XLim',lims,'YLim',lims,'ZLim',lims)
             arrayfun(@(X) set(X, 'Visible','on'), obj.kp3a.PlotSegments);
             obj.isKP3Dplotted = true;
         end
@@ -686,16 +687,16 @@ classdef Label3D < Animator
             m = permute(obj.points3D,[3 2 1]);
             % This hack prevents overlap between zoom callbacks in the kp
             % animator and the VideoAnimators
-            pos = [.99 .99 .01 .01];
+            pos = obj.hiddenAxesPos;
             obj.kp3a = Keypoint3DAnimator(m, obj.skeleton,'Position',pos);
             obj.kp3a.frameInds = obj.frameInds;
             obj.kp3a.frame = obj.frame;
-            grid(obj.kp3a.Axes, 'on');
-            set(obj.kp3a.Axes,'color',obj.mainFigureColor,...
+            ax = obj.kp3a.Axes;
+            grid(ax, 'on');
+            set(ax,'color',obj.mainFigureColor,...
                 'GridColor',obj.gridColor,...
-                'CameraPosition',1.0e+03 * [-1.6835 -1.6713 0.6048],...
-                'Visible','off','Xlim',[-150 150], 'Ylim',[-150 150],...
-                'Zlim', [0 300])
+                'Visible','off')
+            view(ax, 3);
             arrayfun(@(X) set(X, 'Visible','off'), obj.kp3a.PlotSegments);
             obj.isKP3Dplotted = false;
         end
@@ -705,13 +706,17 @@ classdef Label3D < Animator
         function update(obj)
             % Update all of the other animators with any new data.
             for nKPAnimator = 1:obj.nCams
-                markers = squeeze(obj.camPoints(:,nKPAnimator,:,:));
-                markers = permute(markers, [3 2 1]);
-                obj.h{obj.nCams+nKPAnimator}.markers = markers;
-                obj.h{obj.nCams+nKPAnimator}.markersX = squeeze(markers(:,1,:));
-                obj.h{obj.nCams+nKPAnimator}.markersY = squeeze(markers(:,2,:));
-                obj.h{obj.nCams+nKPAnimator}.points.XData = squeeze(markers(obj.frameInds(obj.frame),1,:));
-                obj.h{obj.nCams+nKPAnimator}.points.YData = squeeze(markers(obj.frameInds(obj.frame),2,:));
+                kpaId = obj.nCams+nKPAnimator;
+                kps = squeeze(obj.camPoints(:,nKPAnimator,:,:));
+                kps = permute(kps, [3 2 1]);
+                
+                obj.h{kpaId}.markers = kps;
+                obj.h{kpaId}.markersX = squeeze(kps(:,1,:));
+                obj.h{kpaId}.markersY = squeeze(kps(:,2,:));
+                
+                fr = obj.frameInds(obj.frame);
+                obj.h{kpaId}.points.XData = squeeze(kps(fr,1,:));
+                obj.h{kpaId}.points.YData = squeeze(kps(fr,2,:));
             end
                       
             % Run all of the update functions.
