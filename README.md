@@ -1,6 +1,7 @@
 # Label3D
 
-Label3D is a GUI for manual labeling of 3D keypoints in multiple cameras.
+Label3D is a GUI for the manual labeling of 3D keypoints in multiple cameras.
+![Label3D Animation](common/label3dAnimation.gif)
 
 ## Features
 1. Simultaneous viewing of any number of camera views
