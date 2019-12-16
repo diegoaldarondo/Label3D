@@ -101,6 +101,9 @@ classdef Label3D < Animator
             'h: help guide\n'];
         statusMsg = 'Label3D:\nFrame: %d\nframeRate: %d\n'
         hiddenAxesPos = [.99 .99 .01 .01]
+        isLabeled = 2
+        isInitialized = 1
+        counter
     end
     
     properties (Access = public)
@@ -121,6 +124,7 @@ classdef Label3D < Animator
         jointsControl
         savePath = ''
         kp3a
+        statusAnimator
         h
         verbose = false
         undistortedImages = false
@@ -226,8 +230,11 @@ classdef Label3D < Animator
             % Set up the 3d keypoint animator
             obj.setupKeypoint3dAnimator()
             
+            % Set up a status table. 
+            obj.setUpStatusTable();
+            
             % Link all animators
-            Animator.linkAll([obj.h {obj} {obj.kp3a}])
+            Animator.linkAll([obj.h {obj} {obj.kp3a} {obj.statusAnimator}])
             
             % Set the GUI clicked callback to the custom toggle, so that we
             % can toggle with the keyboard without having the figure lose
@@ -291,7 +298,7 @@ classdef Label3D < Animator
             % labeled views, as well as a logical vector denoting which two
             % views.
             s = squeeze(obj.status(:,:,frame));
-            labeled = s == 1;
+            labeled = s == obj.isLabeled | s == obj.isInitialized;
             jointIds = find(sum(labeled, 2) >= 2);
             camIds = labeled(jointIds, :);
         end
@@ -347,6 +354,13 @@ classdef Label3D < Animator
             % Reset current frame to the initial unlabeled positions.
             for i = 1:obj.nCams
                 obj.h{obj.nCams + i}.resetFrame();
+            end
+            f = obj.frameInds(obj.frame);
+            obj.status(:,:,f) = 0;
+            if ~isempty(obj.initialMarkers)
+                for nAnimator = 1:obj.nCams
+                    obj.initialMarkers{nAnimator}(f,:,:) = nan;
+                end
             end
             obj.checkStatus();
             obj.update()
@@ -437,10 +451,13 @@ classdef Label3D < Animator
                 if isempty(obj.initialMarkers)
                     hasMoved = any(~isnan(currentMarker),2);
                 else
-                    initialMarker = squeeze(obj.initialMarkers{nKPAnimator}(f,:,:))';
-                    hasMoved = any(initialMarker ~= currentMarker,2);
+                    iM = squeeze(obj.initialMarkers{nKPAnimator}(f,:,:))';
+                    cM = currentMarker;
+                    iM(isnan(iM)) = 0;
+                    cM(isnan(cM)) = 0;
+                    hasMoved = any(round(iM,3) ~= round(cM,3),2);
                 end
-                obj.status(:,nKPAnimator,f) = hasMoved;
+                obj.status(hasMoved, nKPAnimator, f) = obj.isLabeled;
                 obj.camPoints(:, nKPAnimator, :, f) = currentMarker;
             end
             obj.saveState()
@@ -485,6 +502,8 @@ classdef Label3D < Animator
                     obj.zoomOut();
                 case 'z'
                     obj.toggleZoomIn();
+                case 'l'
+                    obj.setLabeled();
                 case 'r'
                     reset(obj);
                 case 'pageup'
@@ -498,6 +517,11 @@ classdef Label3D < Animator
             end
         end
         
+        function setLabeled(obj)
+            obj.status(:,:,obj.frameInds(obj.frame)) = obj.isLabeled;
+            obj.update()
+        end            
+            
         function toggleZoomIn(obj)
             zoomState = zoom(obj.Parent);
             zoomState.Direction = 'in';
@@ -534,15 +558,21 @@ classdef Label3D < Animator
             % Load the 3d points
             pts3d = reshape(pts3d, size(pts3d,1), 3, []);
             obj.points3D = permute(pts3d, [3 2 1]);
-            obj.status = ~isnan(obj.points3D);
+            
+            isInit = ~any(isnan(obj.points3D),2);
+            obj.status = repelem(isInit,1,obj.nCams,1)*obj.isInitialized;
+%             obj.status = ~isnan(obj.points3D)*obj.isInitialized;
             
             % Reproject the camera points
             for nFrame = 1:size(obj.points3D,3)
                 obj.reprojectPoints(nFrame);
             end
-
-            obj.checkStatus();
+            for nAnimator = 1:obj.nCams
+                impts = squeeze(obj.camPoints(:,nAnimator,:,:));
+                obj.initialMarkers{nAnimator} = permute(impts, [3 2 1]);
+            end
             obj.update()
+            obj.points3D = nan(size(obj.points3D));
         end
         
         function loadState(obj, files)
@@ -595,15 +625,18 @@ classdef Label3D < Animator
             cameraPoses = obj.cameraPoses;
             
             % Reshape to dannce specifications
-            data_3D = permute(obj.points3D, [3 2 1]);
+            % Only take the labeled frames
+            labeledFrames = ~any(obj.status ~= obj.isLabeled, 2);
+            labeledFrames = repelem(labeledFrames,1,3,1);
+            pts3D = obj.points3d;
+            pts3D(~labeledFrames) = nan;
+            data_3D = permute(pts3D, [3 2 1]);
             data_3D = reshape(data_3D, size(data_3D, 1), []);
             
             for nCam = 1:obj.nCams
                 cp = obj.cameraParams{nCam};
                 % Reproject points from 3D to 2D, applying distortion if
-                % desired. This ensures that the retained points are only
-                % those that have been triangulated, and thus labeled in at
-                % least two frames.
+                % desired.
                 pts = permute(obj.points3D, [3 1 2]);
                 allpts = reshape(pts, [], 3);
                 if ~obj.undistortedImages
@@ -666,6 +699,13 @@ classdef Label3D < Animator
             obj.isKP3Dplotted = true;
         end
         
+    end
+    
+    methods (Access = private)
+        function reset(obj)
+            restrict(obj, 1:obj.origNFrames)
+        end
+        
         function setUpKeypointTable(obj)
             f = figure('Units','Normalized','pos',obj.tablePosition,'Name','Keypoint table',...
                 'NumberTitle','off');
@@ -676,11 +716,21 @@ classdef Label3D < Animator
                 'Units','Normalized','Callback',@(h,~,~) obj.selectNode(h.Value));
             set(obj.Parent.Children(end), 'Visible','off')
         end
-    end
-    
-    methods (Access = private)
-        function reset(obj)
-            restrict(obj, 1:obj.origNFrames)
+        
+        function setUpStatusTable(obj)
+            f = figure('Units','Normalized','pos', [0 0 .5 .3],...
+                'Name','MarkerStatus','NumberTitle','off');
+            ax = gca;
+            colormap([0 0 0;.5 .5 .5;1 1 1])
+            summary = squeeze(mode(obj.status,2));
+            obj.statusAnimator = HeatMapAnimator(summary','Axes', ax);
+            obj.statusAnimator.c.Visible = 'off';
+            ax = obj.statusAnimator.Axes;
+            set(ax, 'YTick',1:obj.nMarkers,'YTickLabels',obj.skeleton.joint_names)
+            yyaxis(ax,'right')
+            set(ax,'YLim',[1 obj.nMarkers],'YTick',1:obj.nMarkers,'YTickLabels',sum(summary,2))
+            set(obj.statusAnimator.img,'CDataMapping','direct')
+            obj.counter = title(sprintf('Total: %d',sum(any(summary==obj.isLabeled,1))));
         end
         
         function setupKeypoint3dAnimator(obj)
@@ -725,12 +775,20 @@ classdef Label3D < Animator
             end
             
             % Update the keypoint animator
-            pts = permute(obj.points3D,[3 2 1]);
+            pts = permute(obj.points3D, [3 2 1]);
             obj.kp3a.markers = pts;
             obj.kp3a.markersX = pts(:,1,:);
             obj.kp3a.markersY = pts(:,2,:);
             obj.kp3a.markersZ = pts(:,3,:);
             obj.kp3a.update()
+            
+            % Update the status animator
+            obj.checkStatus();
+            summary = squeeze(mode(obj.status,2));
+            obj.statusAnimator.img.CData = summary+1;
+            yyaxis(obj.statusAnimator.Axes,'right')
+            set(obj.statusAnimator.Axes,'YTickLabels',sum(summary==obj.isLabeled,2))
+            obj.counter.String = sprintf('Total: %d',sum(any(summary==obj.isLabeled,1)));
         end
     end
 end
