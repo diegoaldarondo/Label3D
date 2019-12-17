@@ -628,7 +628,7 @@ classdef Label3D < Animator
             % Only take the labeled frames
             labeledFrames = ~any(obj.status ~= obj.isLabeled, 2);
             labeledFrames = repelem(labeledFrames,1,3,1);
-            pts3D = obj.points3d;
+            pts3D = obj.points3D;
             pts3D(~labeledFrames) = nan;
             data_3D = permute(pts3D, [3 2 1]);
             data_3D = reshape(data_3D, size(data_3D, 1), []);
@@ -697,8 +697,7 @@ classdef Label3D < Animator
                 'XLim',lims,'YLim',lims,'ZLim',lims)
             arrayfun(@(X) set(X, 'Visible','on'), obj.kp3a.PlotSegments);
             obj.isKP3Dplotted = true;
-        end
-        
+        end        
     end
     
     methods (Access = private)
@@ -719,7 +718,7 @@ classdef Label3D < Animator
         
         function setUpStatusTable(obj)
             f = figure('Units','Normalized','pos', [0 0 .5 .3],...
-                'Name','MarkerStatus','NumberTitle','off');
+                       'NumberTitle','off');
             ax = gca;
             colormap([0 0 0;.5 .5 .5;1 1 1])
             summary = squeeze(mode(obj.status,2));
