@@ -234,7 +234,7 @@ classdef Label3D < Animator
             obj.setUpStatusTable();
             
             % Link all animators
-            Animator.linkAll([obj.h {obj} {obj.kp3a} {obj.statusAnimator}])
+            obj.linkAnimators()
             
             % Set the GUI clicked callback to the custom toggle, so that we
             % can toggle with the keyboard without having the figure lose
@@ -244,6 +244,10 @@ classdef Label3D < Animator
             
             % Set up the keypoint table figure
             obj.setUpKeypointTable();
+        end
+        
+        function linkAnimators(obj)
+            Animator.linkAll([obj.h {obj} {obj.kp3a} {obj.statusAnimator}])
         end
         
         function [c, orientations, locations] = loadCamParams(obj, camparams)
@@ -485,6 +489,8 @@ classdef Label3D < Animator
                         obj.saveState()
                         fprintf('Saved state to %s\n', obj.savePath);
                     end
+                case 'backspace'
+                    obj.deleteSelectedNode();
                 case 't'
                     obj.checkStatus();
                     obj.triangulateLabeledPoints(obj.frameInds(obj.frame));
@@ -697,39 +703,27 @@ classdef Label3D < Animator
                 'XLim',lims,'YLim',lims,'ZLim',lims)
             arrayfun(@(X) set(X, 'Visible','on'), obj.kp3a.PlotSegments);
             obj.isKP3Dplotted = true;
-        end        
+        end      
+        
+        function deleteSelectedNode(obj)
+            % Delete the selected nodes if they exist
+            draggableAnimators = obj.h(obj.nCams+1:2*obj.nCams);
+            fr = obj.frameInds(obj.frame);
+            for nAnimator = 1:numel(draggableAnimators)
+                disp(draggableAnimators{nAnimator}.selectedNode)
+                if ~isnan(draggableAnimators{nAnimator}.selectedNode)
+                    obj.status(obj.selectedNode, nAnimator, fr) = 0;
+                    draggableAnimators{nAnimator}.deleteSelectedNode
+                end
+            end
+            obj.checkStatus()
+            obj.update()
+        end
     end
     
     methods (Access = private)
         function reset(obj)
             restrict(obj, 1:obj.origNFrames)
-        end
-        
-        function setUpKeypointTable(obj)
-            f = figure('Units','Normalized','pos',obj.tablePosition,'Name','Keypoint table',...
-                'NumberTitle','off');
-            obj.jointsPanel = uix.Panel('Parent', f, 'Title', 'Joints',...
-                'Padding', 5,'Units','Normalized');
-            obj.jointsControl = uicontrol(obj.jointsPanel, 'Style',...
-                'listbox', 'String', obj.skeleton.joint_names,...
-                'Units','Normalized','Callback',@(h,~,~) obj.selectNode(h.Value));
-            set(obj.Parent.Children(end), 'Visible','off')
-        end
-        
-        function setUpStatusTable(obj)
-            f = figure('Units','Normalized','pos', [0 0 .5 .3],...
-                       'NumberTitle','off');
-            ax = gca;
-            colormap([0 0 0;.5 .5 .5;1 1 1])
-            summary = squeeze(mode(obj.status,2));
-            obj.statusAnimator = HeatMapAnimator(summary','Axes', ax);
-            obj.statusAnimator.c.Visible = 'off';
-            ax = obj.statusAnimator.Axes;
-            set(ax, 'YTick',1:obj.nMarkers,'YTickLabels',obj.skeleton.joint_names)
-            yyaxis(ax,'right')
-            set(ax,'YLim',[1 obj.nMarkers],'YTick',1:obj.nMarkers,'YTickLabels',sum(summary,2))
-            set(obj.statusAnimator.img,'CDataMapping','direct')
-            obj.counter = title(sprintf('Total: %d',sum(any(summary==obj.isLabeled,1))));
         end
         
         function setupKeypoint3dAnimator(obj)
@@ -782,12 +776,44 @@ classdef Label3D < Animator
             obj.kp3a.update()
             
             % Update the status animator
+            obj.updateStatusAnimator()
+        end
+        
+        function setUpKeypointTable(obj)
+            f = figure('Units','Normalized','pos',obj.tablePosition,'Name','Keypoint table',...
+                'NumberTitle','off');
+            obj.jointsPanel = uix.Panel('Parent', f, 'Title', 'Joints',...
+                'Padding', 5,'Units','Normalized');
+            obj.jointsControl = uicontrol(obj.jointsPanel, 'Style',...
+                'listbox', 'String', obj.skeleton.joint_names,...
+                'Units','Normalized','Callback',@(h,~,~) obj.selectNode(h.Value));
+            set(obj.Parent.Children(end), 'Visible','off')
+        end
+        
+        function setUpStatusTable(obj)
+            f = figure('Units','Normalized','pos', [0 0 .5 .3],...
+                'NumberTitle','off');
+            ax = gca;
+            colormap([0 0 0;.5 .5 .5;1 1 1])
+            summary = squeeze(mode(obj.status,2));
+            obj.statusAnimator = HeatMapAnimator(summary','Axes', ax);
+            obj.statusAnimator.c.Visible = 'off';
+            ax = obj.statusAnimator.Axes;
+            set(ax, 'YTick',1:obj.nMarkers,'YTickLabels',obj.skeleton.joint_names)
+            yyaxis(ax,'right')
+            set(ax,'YLim',[1 obj.nMarkers],'YTick',1:obj.nMarkers,'YTickLabels',sum(summary,2))
+            set(obj.statusAnimator.img,'CDataMapping','direct')
+            obj.counter = title(sprintf('Total: %d',sum(any(summary==obj.isLabeled,1))));
+        end
+        
+        function updateStatusAnimator(obj)
             obj.checkStatus();
             summary = squeeze(mode(obj.status,2));
             obj.statusAnimator.img.CData = summary+1;
             yyaxis(obj.statusAnimator.Axes,'right')
-            set(obj.statusAnimator.Axes,'YTickLabels',sum(summary==obj.isLabeled,2))
+            set(obj.statusAnimator.Axes,'YTickLabels',flip(sum(summary==obj.isLabeled,2)))
             obj.counter.String = sprintf('Total: %d',sum(any(summary==obj.isLabeled,1)));
+            obj.statusAnimator.update()
         end
     end
 end
