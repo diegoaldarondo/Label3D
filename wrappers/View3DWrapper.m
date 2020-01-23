@@ -1,13 +1,16 @@
-function viewer = View3DWrapper(basePath, vidName, frames, comPath, danncePath, skeletonPath, smooth)
-% 
-basePath = '/home/diego/cluster/Jesse/P14_pups/RecordingP14Pup_one';
-vidName = '0.mp4';
-frames = 1:1000;
-comPath = fullfile(basePath, 'COM/predict_results_MAX_01152020/COM3D_undistorted_medfilt.mat');
-danncePath = fullfile(basePath, 'DANNCE/predict_results_MAX_01162020/save_data_MAX.mat');
-skeletonPath = 'skeletons/rat16.mat';
-comOnly = false;
-smooth = true;
+function viewer = View3DWrapper(basePath, vidName, frames, comPath, danncePath, skeletonPath, smooth, comOnly)
+%% View3DWrapper - Wrap view3d to look at video with reprojections
+%
+% Example: 
+% basePath = '/home/diego/cluster/Jesse/P14_pups/RecordingP14Pup_one';
+% vidName = '0.mp4';
+% frames = 1:1000; % relative to first frame in vidName.
+% comPath = fullfile(basePath, 'COM/predict_results_MAX_01152020/COM3D_undistorted_medfilt.mat');
+% danncePath = fullfile(basePath, 'DANNCE/predict_results_MAX_01162020/save_data_MAX.mat');
+% skeletonPath = 'skeletons/rat16.mat';
+% comOnly = false;
+% smooth = true;
+% viewer = View3DWrapper(basePath, vidName, frames, comPath, danncePath, skeletonPath, smooth, comOnly)
 
 %% Load in the calibration parameter data
 calibPaths = collectCalibrationPaths(basePath);
