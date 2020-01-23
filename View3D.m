@@ -3,8 +3,11 @@ classdef View3D < Label3D
         function saveState(obj)
             % Override superclass to do nothing
         end
-        function linkAnimators(obj)
-            Animator.linkAll([obj.h {obj} {obj.kp3a}])
+%         function linkAnimators(obj)
+%             Animator.linkAll([obj.h {obj} {obj.kp3a}])
+%         end
+        function animators = getAnimators(obj)
+            animators = [obj.h {obj} {obj.kp3a}];
         end
     end
     

@@ -234,7 +234,7 @@ classdef Label3D < Animator
             obj.setUpStatusTable();
             
             % Link all animators
-            obj.linkAnimators()
+            Animator.linkAll(obj.getAnimators)
             
             % Set the GUI clicked callback to the custom toggle, so that we
             % can toggle with the keyboard without having the figure lose
@@ -246,9 +246,13 @@ classdef Label3D < Animator
             obj.setUpKeypointTable();
         end
         
-        function linkAnimators(obj)
-            Animator.linkAll([obj.h {obj} {obj.kp3a} {obj.statusAnimator}])
+        function animators = getAnimators(obj)
+            animators = [obj.h {obj} {obj.kp3a} {obj.statusAnimator}];
         end
+        
+%         function linkAnimators(obj)
+%             Animator.linkAll(animators)
+%         end
         
         function [c, orientations, locations] = loadCamParams(obj, camparams)
             % Helper to load in camera params into cameraParameters objects
@@ -454,6 +458,7 @@ classdef Label3D < Animator
                 % just check for non-nans.
                 if isempty(obj.initialMarkers)
                     hasMoved = any(~isnan(currentMarker),2);
+                    obj.status(~hasMoved, nKPAnimator, f) = 0;
                 else
                     iM = squeeze(obj.initialMarkers{nKPAnimator}(f,:,:))';
                     cM = currentMarker;
@@ -545,11 +550,11 @@ classdef Label3D < Animator
                 % We need to disable normal keypress mode
                 % functionality to prevent the command window from
                 % taking focus
-                obj.Parent.WindowKeyPressFcn = @(src,event) Animator.runAll([obj.h {obj} {obj.kp3a}],src,event);
+                obj.Parent.WindowKeyPressFcn = @(src,event) Animator.runAll(obj.getAnimators,src,event);
                 obj.Parent.KeyPressFcn = [];
             else
                 zoomState.Enable = 'off';
-                obj.Parent.WindowKeyPressFcn = @(src,event) Animator.runAll([obj.h {obj} {obj.kp3a}],src,event);
+                obj.Parent.WindowKeyPressFcn = @(src,event) Animator.runAll(obj.getAnimators,src,event);
                 obj.Parent.KeyPressFcn = [];
             end
         end
@@ -710,7 +715,6 @@ classdef Label3D < Animator
             draggableAnimators = obj.h(obj.nCams+1:2*obj.nCams);
             fr = obj.frameInds(obj.frame);
             for nAnimator = 1:numel(draggableAnimators)
-                disp(draggableAnimators{nAnimator}.selectedNode)
                 if ~isnan(draggableAnimators{nAnimator}.selectedNode)
                     obj.status(obj.selectedNode, nAnimator, fr) = 0;
                     draggableAnimators{nAnimator}.deleteSelectedNode

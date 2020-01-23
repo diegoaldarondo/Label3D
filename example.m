@@ -7,6 +7,7 @@
 % 3. Point-and-click and draggable gestures to label keypoints. 
 % 4. Zooming, panning, and other default Matlab gestures
 % 5. Integration with Animator classes. 
+% 6. Support for editing prelabeled data.
 % 
 % Instructions:
 % right: move forward one frameRate
