@@ -1,4 +1,4 @@
-function viewer = View3DWrapper(basePath, vidName, frames, comPath, danncePath, skeletonPath, smooth, comOnly)
+function labeler = InitializedLabel3DWrapper(basePath, vidName, frames, comPath, danncePath, skeletonPath, smooth, comOnly)
 %% View3DWrapper - Wrap view3d to look at video with reprojections
 %
 % Example: 
@@ -10,7 +10,7 @@ function viewer = View3DWrapper(basePath, vidName, frames, comPath, danncePath, 
 % skeletonPath = 'skeletons/rat16.mat';
 % comOnly = false;
 % smooth = true;
-% viewer = View3DWrapper(basePath, vidName, frames, comPath, danncePath, skeletonPath, smooth, comOnly)
+% labeler = InitializedLabel3DWrapper(basePath, vidName, frames, comPath, danncePath, skeletonPath, smooth, comOnly)
 
 %% Load in the calibration parameter data
 calibPaths = collectCalibrationPaths(basePath);
@@ -50,5 +50,5 @@ end
 
 %%
 figure;
-viewer = View3D(params, videos, skeleton);
-viewer.loadFrom3D(data_3d)
+labeler = Label3D(params, videos, skeleton,'savePath','archive/');
+labeler.loadFrom3D(data_3d)

@@ -462,9 +462,12 @@ classdef Label3D < Animator
                 else
                     iM = squeeze(obj.initialMarkers{nKPAnimator}(f,:,:))';
                     cM = currentMarker;
+                    isDeleted = any(isnan(cM),2);
                     iM(isnan(iM)) = 0;
                     cM(isnan(cM)) = 0;
                     hasMoved = any(round(iM,3) ~= round(cM,3),2);
+                    hasMoved = hasMoved & ~isDeleted;
+                    obj.status(isDeleted, nKPAnimator, f) = 0;
                 end
                 obj.status(hasMoved, nKPAnimator, f) = obj.isLabeled;
                 obj.camPoints(:, nKPAnimator, :, f) = currentMarker;
@@ -473,6 +476,7 @@ classdef Label3D < Animator
         end
         
         function keyPressCallback(obj,source,eventdata)
+            obj.checkForClickedNodes
             % keyPressCallback - Handle UI
             % Extends Animator callback function
             
@@ -710,13 +714,25 @@ classdef Label3D < Animator
             obj.isKP3Dplotted = true;
         end      
         
+        function checkForClickedNodes(obj)
+            % Delete the selected nodes if they exist
+            draggableAnimators = obj.h(obj.nCams+1:2*obj.nCams);
+            for nAnimator = 1:numel(draggableAnimators)
+                if ~isnan(draggableAnimators{nAnimator}.selectedNode)
+                    obj.selectedNode = draggableAnimators{nAnimator}.selectedNode;
+                end
+            end
+            obj.checkStatus()
+            obj.update()
+        end
+        
         function deleteSelectedNode(obj)
             % Delete the selected nodes if they exist
             draggableAnimators = obj.h(obj.nCams+1:2*obj.nCams);
             fr = obj.frameInds(obj.frame);
             for nAnimator = 1:numel(draggableAnimators)
                 if ~isnan(draggableAnimators{nAnimator}.selectedNode)
-                    obj.status(obj.selectedNode, nAnimator, fr) = 0;
+                    obj.status(draggableAnimators{nAnimator}.selectedNode, nAnimator, fr) = 0;
                     draggableAnimators{nAnimator}.deleteSelectedNode
                 end
             end
@@ -765,7 +781,7 @@ classdef Label3D < Animator
                 obj.h{kpaId}.points.XData = squeeze(kps(fr,1,:));
                 obj.h{kpaId}.points.YData = squeeze(kps(fr,2,:));
             end
-                      
+            
             % Run all of the update functions.
             for nAnimator = 1:numel(obj.h)
                 update(obj.h{nAnimator})
@@ -780,7 +796,7 @@ classdef Label3D < Animator
             obj.kp3a.update()
             
             % Update the status animator
-            obj.updateStatusAnimator()
+            obj.updateStatusAnimator()  
         end
         
         function setUpKeypointTable(obj)
