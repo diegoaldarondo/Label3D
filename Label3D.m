@@ -427,7 +427,7 @@ classdef Label3D < Animator
         
         function plotCameras(obj)
             % Helper function to check camera positions.
-            f = figure('color','w','Name','Camera Positions','NumberTitle','off');
+            f = figure('Name','Camera Positions','NumberTitle','off');
             ax = axes(f);
             colors = lines(obj.nCams);
             p = cell(obj.nCams,1);
@@ -439,8 +439,9 @@ classdef Label3D < Animator
             end
             grid on
             axis equal;
-            set(ax,'FontSize',16,'XLim',[-500 500],...
-                'YLim',[-500 500],'ZLim',[0 500]);
+            daspect(ax, [1 1 1]);
+%             set(ax,'FontSize',16,'XLim',[-500 500],...
+%                 'YLim',[-500 500],'ZLim',[0 500]);
             xlabel('X')
             ylabel('Y')
             zlabel('Z')
@@ -572,11 +573,16 @@ classdef Label3D < Animator
             
             % Load the 3d points
             pts3d = reshape(pts3d, size(pts3d,1), 3, []);
-            obj.points3D = permute(pts3d, [3 2 1]);
+            pts3d = permute(pts3d, [3 2 1]);
             
-            isInit = ~any(isnan(obj.points3D),2);
-            obj.status = repelem(isInit,1,obj.nCams,1)*obj.isInitialized;
-%             obj.status = ~isnan(obj.points3D)*obj.isInitialized;
+            
+            % Update the stauts. Only overwrite non-labeled points
+            isInit = ~any(isnan(pts3d),2);
+            newStatus = repelem(isInit,1,obj.nCams,1)*obj.isInitialized;
+            handLabeled = obj.status == obj.isLabeled;
+            obj.status(~handLabeled) = newStatus(~handLabeled);
+            ptsHandLabeled = repelem(any(handLabeled,2), 1, 3, 1);
+            obj.points3D(~ptsHandLabeled) = pts3d(~ptsHandLabeled);
             
             % Reproject the camera points
             for nFrame = 1:size(obj.points3D,3)

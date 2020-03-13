@@ -25,10 +25,9 @@ skeleton = load(skeletonPath);
 %% Load the videos into memory
 videos = cell(3,1);
 for nVid = 1:numel(vid_paths)
-    vid = readFrames(vid_paths{nVid}, frames);
     frameInds = matched{nVid}.data_frame(frames);
-    V = cat(4, vid(:,:,:,frameInds+1));
-    videos{nVid} = V;
+    vid = readFrames(vid_paths{nVid}, frames);
+    videos{nVid} = vid(:,:,:,frameInds+1);
 end
 
 %% Load in data
