@@ -3,6 +3,22 @@
 Label3D is a GUI for the manual labeling of 3D keypoints in multiple cameras.
 ![Label3D Animation](common/label3dAnimation.gif)
 
+## Installation
+
+Label3D is dependent on other git repositories. To install dependencies recursively use:
+
+```
+git clone  --recurse-submodules https://github.com/diegoaldarondo/Label3D.git
+```
+
+Otherwise you can manually install dependencies.
+
+```
+git clone https://github.com/diegoaldarondo/Label3D.git
+cd Label3D/deps
+git clone https://github.com/diegoaldarondo/Animator.git
+```
+
 ## Features
 1. Simultaneous viewing of any number of camera views
 2. Multiview triangulation of 3D keypoints
