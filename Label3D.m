@@ -593,7 +593,7 @@ classdef Label3D < Animator
                 obj.initialMarkers{nAnimator} = permute(impts, [3 2 1]);
             end
             obj.update()
-            obj.points3D = nan(size(obj.points3D));
+%             obj.points3D = nan(size(obj.points3D));
         end
         
         function loadState(obj, files)
@@ -653,6 +653,8 @@ classdef Label3D < Animator
             pts3D(~labeledFrames) = nan;
             data_3D = permute(pts3D, [3 2 1]);
             data_3D = reshape(data_3D, size(data_3D, 1), []);
+%             data_3D(~any(~isnan(data_3D),2),:) = [];
+%             pts3D(any(~any(~isnan(pts3D),2),3),:,:) = [];
             
             for nCam = 1:obj.nCams
                 cp = obj.cameraParams{nCam};

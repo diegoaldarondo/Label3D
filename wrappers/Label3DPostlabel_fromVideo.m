@@ -23,8 +23,7 @@ matched = cellfun(@(X) {load(X)}, matched);
 nCameras = numel(labelPaths);
 for nCam = 1:nCameras
     % Find corresponding sampleIds
-    isLabeled = any(~isnan(labels(nCam).data_2D), 2);
-    isLabeled = find(isLabeled);
+    isLabeled = any(squeeze(~any(labels(nCam).status ~= 2, 2)),1);
     data_sampleID = matched{nCam}.data_sampleID(frames);
     data_frame = matched{nCam}.data_frame(frames);
     data_sampleID = data_sampleID(isLabeled);
