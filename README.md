@@ -26,7 +26,6 @@ git clone https://github.com/diegoaldarondo/Animator.git
 4. Zooming, panning, and other default Matlab gestures
 5. Integration with `Animator` classes
 
-
 ## Usage
 Requires `Matlab 2019a` or `Matlab 2019b`
 
@@ -44,9 +43,10 @@ labelGui = Label3D(params, videos, skeleton);
 **left**: move backward one frameRate<br>
 **up**: increase the frameRate<br>
 **down**: decrease the frameRate<br>
-**t**: triangulate points in current frame that have been labeled in at least two images and reproject into each image<br>
+**t**: triangulate points in current frame that have been labeled or initialized in at least two images and reproject into each image<br>
 **r**: reset gui to the first frame and remove Animator restrictions<br>
 **u**: reset the current frame to the initial marker positions<br>
+**l**: Set all keypoints to labeled state<br>
 **z**: Toggle zoom state<br>
 **p**: Show 3d animation plot of the triangulated points.<br>
 **backspace**: reset currently held node (first click and hold, then backspace to delete)<br>
