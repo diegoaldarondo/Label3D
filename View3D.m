@@ -9,6 +9,15 @@ classdef View3D < Label3D
         function animators = getAnimators(obj)
             animators = [obj.h {obj} {obj.kp3a}];
         end
+        
+        function linkFrameInds(obj, newInds)
+            obj.frameInds = obj.frameInds(newInds);
+            % Shuffle all of the Animators
+            for nAnimator = 1:numel(obj.h)
+                obj.h{nAnimator}.frameInds = obj.h{nAnimator}.frameInds(newInds);
+            end
+            obj.kp3a.frameInds = obj.kp3a.frameInds(newInds);
+        end
     end
     
     methods (Access = protected)

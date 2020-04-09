@@ -425,6 +425,26 @@ classdef Label3D < Animator
             pt = pointTrack(viewIds, imPts);
         end
         
+        function linkFrameInds(obj, newInds)
+            obj.frameInds = obj.frameInds(newInds);
+            % Shuffle all of the Animators
+            for nAnimator = 1:numel(obj.h)
+                obj.h{nAnimator}.frameInds = obj.h{nAnimator}.frameInds(newInds);
+            end
+            obj.kp3a.frameInds = obj.kp3a.frameInds(newInds);
+            obj.statusAnimator.frameInds = obj.kp3a.frameInds(newInds);
+        end
+        
+        function shuffleFrames(obj)
+            shuffleInds = randperm(length(obj.frameInds));
+            obj.linkFrameInds(shuffleInds)
+        end
+        
+        function sortFrames(obj)
+            [~, sortInds] = sort(obj.frameInds);
+            obj.linkFrameInds(sortInds)
+        end
+        
         function plotCameras(obj)
             % Helper function to check camera positions.
             f = figure('Name','Camera Positions','NumberTitle','off');
