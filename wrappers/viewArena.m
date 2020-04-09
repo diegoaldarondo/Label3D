@@ -28,12 +28,13 @@ pred = load(danncePath);
 nFrames = size(pred.pred,1);
 com = COMs.com(1:nFrames-1,:);
 com = COMs.com(start_frame:start_frame+nFrames-1,:);
-skeleton = load('rat16.mat');
+% skeleton = load('rat16.mat');
+skeleton = load('/home/diego/code/olveczky/Label3D/skeletons/jesse_skeleton_paws.mat');
 boxskeleton = load('box.mat');
 %% Make the box
 box = zeros(size(com,1), size(com,2), numel(skeleton.joint_names));
-vMin = -80;
-vMax = 80;
+vMin = -160;
+vMax = 120;
 box(:,:,1) = com + [vMin vMax vMax];
 box(:,:,2) = com + [vMax vMax vMax];
 box(:,:,3) = com + [vMax vMin vMax];
@@ -59,7 +60,7 @@ viewer{2} = Keypoint3DAnimator(box, boxskeleton, 'Axes', ax);
 Animator.linkAll(viewer)
 view(ax, 3)
 lim = [-300 300];
-set(ax,'XGrid','on','YGrid','on','ZGrid','on','XLim',lim, 'YLim',lim, 'ZLim',[-100 200])
+set(ax,'XGrid','on','YGrid','on','ZGrid','on','XLim',lim, 'YLim',lim, 'ZLim',[-100 400])
 daspect(ax,[1 1 1])
 floor = patch(ax, lim([0 1 1 0]+1),lim([0 0 1 1]+1),[0 0 0 0],[.2 .2 .2],'FaceAlpha',.5);
 [x,y,z] = cylinder(arenaSize);

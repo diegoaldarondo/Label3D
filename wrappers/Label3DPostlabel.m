@@ -40,7 +40,7 @@ labels = cellfun(@load, labelPaths);
 nCameras = numel(labelPaths);
 for nCam = 1:nCameras
     % Find corresponding sampleIds
-    isLabeled = any(~isnan(labels(nCam).data_2D), 2);
+    isLabeled = any(squeeze(~any(labels(nCam).status ~= 2, 2)),1);
     isLabeled = find(isLabeled);
     indices = isLabeled*nCameras - (nCameras - nCam);
     data_sampleID = sIds(indices);

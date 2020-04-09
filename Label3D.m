@@ -606,19 +606,20 @@ classdef Label3D < Animator
                          
             % Load the files and store metadata
             data = cellfun(@load, files);      
-            obj.status = data(1).status;
+            obj.status(:,:,1:size(data(1).status,3)) = data(1).status;
             
             % Load the 3d points
             pts3d = data(1).data_3D;
             pts3d = reshape(pts3d, size(pts3d,1), 3, []);
-            obj.points3D = permute(pts3d, [3 2 1]);
+            pts3d = permute(pts3d, [3 2 1]);
+            obj.points3D(:,:,1:size(pts3d,3)) = pts3d;
             
             % Load the camera points
             for nFile = 1:numel(files)
                 pts = data(nFile).data_2D;
                 pts = reshape(pts, size(pts,1), 2, []);
                 pts = permute(pts, [3 2 1]);
-                obj.camPoints(:,nFile,:,:) = pts;
+                obj.camPoints(:,nFile,:,1:size(pts,3)) = pts;
             end
         end
         
