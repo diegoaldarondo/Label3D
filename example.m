@@ -32,15 +32,15 @@ addpath(genpath('deps'))
 addpath(genpath('skeletons'))
 
 %% Load in the calibration parameter data
-params3 = load('/home/diego/cluster/Diego/code/DANNCE/demo/calibrd18_black6_mouseone_green/calibration/hires_cam1_params.mat');
-params1 = load('/home/diego/cluster/Diego/code/DANNCE/demo/calibrd18_black6_mouseone_green/calibration/hires_cam2_params.mat');
-params2 = load('/home/diego/cluster/Diego/code/DANNCE/demo/calibrd18_black6_mouseone_green/calibration/hires_cam3_params.mat');
+params3 = load('Y:/Diego/code/DANNCE/demo/calibrd18_black6_mouseone_green/calibration/hires_cam1_params.mat');
+params1 = load('Y:/Diego/code/DANNCE/demo/calibrd18_black6_mouseone_green/calibration/hires_cam2_params.mat');
+params2 = load('Y:/Diego/code/DANNCE/demo/calibrd18_black6_mouseone_green/calibration/hires_cam3_params.mat');
 params = {params1, params2, params3};
 
 %% Load the videos into memory
-vid_paths{1} = '/home/diego/cluster/Diego/code/DANNCE/demo/calibrd18_black6_mouseone_green/videos/CameraLmouse/636975888610580066/7000.mp4';
-vid_paths{2} = '/home/diego/cluster/Diego/code/DANNCE/demo/calibrd18_black6_mouseone_green/videos/CameraRmouse/636975888633320066/7000.mp4';
-vid_paths{3} = '/home/diego/cluster/Diego/code/DANNCE/demo/calibrd18_black6_mouseone_green/videos/CameraSmouse/636975888673340066/7000.mp4';
+vid_paths{1} = 'Y:/Diego/code/DANNCE/demo/calibrd18_black6_mouseone_green/videos/CameraLmouse/636975888610580066/7000.mp4';
+vid_paths{2} = 'Y:/Diego/code/DANNCE/demo/calibrd18_black6_mouseone_green/videos/CameraRmouse/636975888633320066/7000.mp4';
+vid_paths{3} = 'Y:/Diego/code/DANNCE/demo/calibrd18_black6_mouseone_green/videos/CameraSmouse/636975888673340066/7000.mp4';
 videos = cell(3,1);
 for nVid = 1:numel(vid_paths)
     vid = VideoReader(vid_paths{nVid});
@@ -74,6 +74,7 @@ skeleton = load('skeletons/rat16');
 % markers{1} = repmat(reshape(init',1,2,[]),nFrames,1,1);
 % markers{2} = repmat(reshape(init',1,2,[]),nFrames,1,1);
 % markers{3} = repmat(reshape(init',1,2,[]),nFrames,1,1);
+
 %% Start Label3D
 close all
 labelGui = Label3D(params, videos, skeleton);

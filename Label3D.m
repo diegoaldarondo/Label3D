@@ -107,6 +107,7 @@ classdef Label3D < Animator
     end
     
     properties (Access = public)
+        origCamParams
         cameraParams
         cameraPoses
         orientations
@@ -162,19 +163,20 @@ classdef Label3D < Animator
             end
             
             % Set up Animator parameters
+            obj.origCamParams = camparams;
             obj.nFrames = size(videos{1},4);
             obj.origNFrames = obj.nFrames;
             obj.frameInds = 1:obj.nFrames;
             obj.nMarkers = numel(obj.skeleton.joint_names);
-            obj.savePath = sprintf('%s%sCamera_', obj.savePath,...
+            obj.savePath = sprintf('%s%s', obj.savePath,...
                 datestr(now,'yyyy_mm_dd_HH_MM_SS'));
             
             % Set up the cameras
-            obj.nCams = numel(camparams);
+            obj.nCams = numel(obj.origCamParams);
             obj.h = cell(1);
             obj.ImageSize = [size(videos{1},1) size(videos{1},2)];
             [obj.cameraParams, obj.orientations, obj.locations] = ...
-                obj.loadCamParams(camparams);
+                obj.loadCamParams(obj.origCamParams);
             obj.cameraPoses = obj.getCameraPoses();
             
             % Make the VideoAnimators
@@ -248,6 +250,31 @@ classdef Label3D < Animator
         
         function animators = getAnimators(obj)
             animators = [obj.h {obj} {obj.kp3a} {obj.statusAnimator}];
+        end
+        
+        function saveAll(obj)
+            animators = obj.getAnimators();
+            videos = cell(numel(obj.origCamParams), 1);
+            nVid = 1;
+            for i = 1:numel(animators)
+                if isa(animators{i}, 'VideoAnimator')
+                    videos{nVid} = animators{i}.V;
+                end
+                nVid = nVid + 1;
+            end
+            path = sprintf('%s_all.mat', obj.savePath);
+            camparams = obj.origCamParams;
+            skeleton = obj.skeleton;
+            status = obj.status;
+            % Reshape to dannce specifications
+            % Only take the labeled frames
+            labeledFrames = ~any(obj.status ~= obj.isLabeled, 2);
+            labeledFrames = repelem(labeledFrames,1,3,1);
+            pts3D = obj.points3D;
+            pts3D(~labeledFrames) = nan;
+            data_3D = permute(pts3D, [3 2 1]);
+            data_3D = reshape(data_3D, size(data_3D, 1), []);
+            save(path, 'videos','camparams','skeleton','data_3D','status')
         end
         
 %         function linkAnimators(obj)
@@ -396,7 +423,7 @@ classdef Label3D < Animator
             if numel(cam) > 1
                 warning(['Click is in multiple images. ' ...
                     'Please zoom image axes such that they are '...
-                    'non-overlapping. To zoom out fully in all images, press "z".'])
+                    'non-overlapping. To zoom out fully in all images, press "o".'])
                 return;
             end
             
@@ -481,9 +508,6 @@ classdef Label3D < Animator
             % keyPressCallback - Handle UI
             % Extends Animator callback function
             
-            % Extend Animator callback function
-            keyPressCallback@Animator(obj,source,eventdata);
-            
             % Determine the key that was pressed and any modifiers
             keyPressed = eventdata.Key;
             modifiers = get(gcf, 'CurrentModifier');
@@ -524,6 +548,10 @@ classdef Label3D < Animator
                     reset(obj);
                 case 'pageup'
                     obj.selectNode(1);
+                case 'f'
+                    newFrame = inputdlg('Enter frame number:');
+                    newFrame = str2double(newFrame);
+                    obj.setFrame(newFrame)
                 case 'p'
                     if ~obj.isKP3Dplotted
                         obj.add3dPlot();
@@ -531,6 +559,30 @@ classdef Label3D < Animator
                         obj.remove3dPlot();
                     end
             end
+            
+            % Extend Animator callback function
+            keyPressCallback@Animator(obj,source,eventdata);
+        end
+        
+        function setFrame(obj, newFrame)
+            % setFrame - set the frame of the GUI
+            % Input:
+            %   newFrame: Frame number (integer)
+            % 
+            % The frame is set to be mod(newFrame, nFrames)
+            if isnumeric(newFrame)
+                if rem(newFrame, 1) ~= 0
+                    error('Frame must be an integer.')
+                end
+            else
+                error('Frame must be an integer.')
+            end
+            animators = obj.getAnimators();
+            for i = 1:numel(animators)
+                animators{i}.frame = newFrame;
+            end
+            set(obj.Axes.Parent ,'NumberTitle','off',...
+                'Name',sprintf('Frame: %d',obj.frameInds(obj.frame(1))));
         end
         
         function setLabeled(obj)
@@ -574,15 +626,18 @@ classdef Label3D < Animator
             % Load the 3d points
             pts3d = reshape(pts3d, size(pts3d,1), 3, []);
             pts3d = permute(pts3d, [3 2 1]);
+            if size(pts3d, 3) ~= obj.nFrames
+                error('3d points do not have the same number of frames as Label3D instance') 
+            end
             
-            
-            % Update the stauts. Only overwrite non-labeled points
+            % Update the status. Only overwrite non-labeled points
             isInit = ~any(isnan(pts3d),2);
             newStatus = repelem(isInit,1,obj.nCams,1)*obj.isInitialized;
             handLabeled = obj.status == obj.isLabeled;
             obj.status(~handLabeled) = newStatus(~handLabeled);
             ptsHandLabeled = repelem(any(handLabeled,2), 1, 3, 1);
             obj.points3D(~ptsHandLabeled) = pts3d(~ptsHandLabeled);
+            
             
             % Reproject the camera points
             for nFrame = 1:size(obj.points3D,3)
@@ -594,32 +649,36 @@ classdef Label3D < Animator
             end
             obj.update()
 %             obj.points3D = nan(size(obj.points3D));
-        end
+        end     
         
-        function loadState(obj, files)
+        function loadState(obj, varargin)
             % loadState - Load (triangulated) data from previous sessions.
             %
-            % Syntax: obj.loadState(files)
+            % Syntax: obj.loadState(file)
             %
-            % Inputs: files - cell array of paths to .mat files generated
-            %                 by Label3D.saveState()
-                         
-            % Load the files and store metadata
-            data = cellfun(@load, files);      
-            obj.status = data(1).status;
-            
-            % Load the 3d points
-            pts3d = data(1).data_3D;
-            pts3d = reshape(pts3d, size(pts3d,1), 3, []);
-            obj.points3D = permute(pts3d, [3 2 1]);
-            
-            % Load the camera points
-            for nFile = 1:numel(files)
-                pts = data(nFile).data_2D;
-                pts = reshape(pts, size(pts,1), 2, []);
-                pts = permute(pts, [3 2 1]);
-                obj.camPoints(:,nFile,:,:) = pts;
+            % Optional Inputs: file - *.mat file to previous session. Output of
+            % Label3D.saveState()
+            %
+            % If file is not specified, calls uigetfile. 
+            if isempty(varargin)
+                file = uigetfile('*.mat','MultiSelect','off'); 
+            else
+                file = varargin{1};
+                if isstring(file) || ischar(file)
+                    [~,~,ext] = fileparts(file);
+                    if ~strcmp(ext, '.mat')
+                        error('File must be *.mat')
+                    end
+                else
+                    error('File must be *.mat')
+                end
             end
+            % Load the files and store metadata
+            data = load(file);                  
+            % Load the points
+            obj.loadFrom3D(data.data_3D)
+            obj.status = data.status;
+            obj.update()
         end
         
         function saveState(obj)
@@ -655,32 +714,36 @@ classdef Label3D < Animator
             data_3D = reshape(data_3D, size(data_3D, 1), []);
 %             data_3D(~any(~isnan(data_3D),2),:) = [];
 %             pts3D(any(~any(~isnan(pts3D),2),3),:,:) = [];
-            
-            for nCam = 1:obj.nCams
-                cp = obj.cameraParams{nCam};
-                % Reproject points from 3D to 2D, applying distortion if
-                % desired.
-                pts = permute(obj.points3D, [3 1 2]);
-                allpts = reshape(pts, [], 3);
-                if ~obj.undistortedImages
-                    data_2D = worldToImage(cp, cp.RotationMatrices,...
-                        cp.TranslationVectors, allpts, 'ApplyDistortion',true);
-                else
-                    data_2D = worldToImage(cp, cp.RotationMatrices,...
-                        cp.TranslationVectors, allpts);
-                end
-                data_2D = reshape(data_2D, size(pts,1), [], 2);
-                data_2D = permute(data_2D, [1 3 2]);
-                data_2D = reshape(data_2D, size(pts,1), []);
-                
-                % Save the data
-                path = sprintf('%s%d.mat', obj.savePath, nCam);
-                if obj.verbose
-                    fprintf('Saving to %s at %s\n', path, datestr(now,'HH:MM:SS'))
-                end
-                save(path, 'data_2D', 'data_3D', 'status',...
-                    'skeleton', 'imageSize', 'cameraPoses')
-            end
+           
+            camparams = obj.origCamParams;
+            path = sprintf('%s.mat', obj.savePath);
+            save(path, 'data_3D', 'status',...
+                'skeleton', 'imageSize', 'cameraPoses','camparams')
+%             for nCam = 1:obj.nCams
+%                 cp = obj.cameraParams{nCam};
+%                 % Reproject points from 3D to 2D, applying distortion if
+%                 % desired.
+%                 pts = permute(obj.points3D, [3 1 2]);
+%                 allpts = reshape(pts, [], 3);
+%                 if ~obj.undistortedImages
+%                     data_2D = worldToImage(cp, cp.RotationMatrices,...
+%                         cp.TranslationVectors, allpts, 'ApplyDistortion',true);
+%                 else
+%                     data_2D = worldToImage(cp, cp.RotationMatrices,...
+%                         cp.TranslationVectors, allpts);
+%                 end
+%                 data_2D = reshape(data_2D, size(pts,1), [], 2);
+%                 data_2D = permute(data_2D, [1 3 2]);
+%                 data_2D = reshape(data_2D, size(pts,1), []);
+%                 
+%                 % Save the data
+%                 path = sprintf('%s%d.mat', obj.savePath, nCam);
+%                 if obj.verbose
+%                     fprintf('Saving to %s at %s\n', path, datestr(now,'HH:MM:SS'))
+%                 end
+% %                 save(path, 'data_2D', 'data_3D', 'status',...
+% %                     'skeleton', 'imageSize', 'cameraPoses')
+%             end
         end
         
         function selectNode(obj, val)
@@ -771,6 +834,83 @@ classdef Label3D < Animator
             arrayfun(@(X) set(X, 'Visible','off'), obj.kp3a.PlotSegments);
             obj.isKP3Dplotted = false;
         end
+    end
+    
+    methods(Static)
+       
+       function labelGui = loadMerge(varargin)
+           % loadMerge - Merge multiple session files
+           %
+           % The session files must be *.mat generated from 
+           % Label3D.saveAll()
+           %
+           % Optional Inputs: files - Cell array of file paths. 
+           %
+           % If no files are given, select with uigetfile
+           if isempty(varargin)
+                files = uigetfile('*.mat','MultiSelect','on'); 
+           else
+               files = varargin{1};
+                if iscell(files)
+                    for nFile = 1:numel(files)
+                        path = files{nFile};
+                        if isstring(path) || ischar(path)
+                            [~,~,ext] = fileparts(path);
+                            if ~strcmp(ext, '.mat')
+                                error('File must be *.mat')
+                            end
+                        else
+                            error('File must be *.mat')
+                        end
+                    end
+                end
+            end
+           
+           tempVideos = cellfun(@(X) load(X, 'videos'), files);
+           videos = cell(numel(tempVideos(1).videos), 1);
+           for nCam = 1:numel(tempVideos(1).videos)
+               vids = arrayfun(@(X) X.videos{nCam}, tempVideos, 'UniformOutput', false);
+               videos{nCam} = cat(4, vids{:});
+               vids = [];
+               for nFile = 1:numel(tempVideos)
+                   tempVideos(nFile).videos{nCam} = [];
+               end
+           end
+           
+           pts3d = cellfun(@(X) load(X, 'data_3D'), files);
+           pts3d = cat(1, pts3d.data_3D);
+           status = cellfun(@(X) load(X, 'status'), files);
+           status = cat(3, status.status);
+           
+           data = cellfun(@(X) load(X, 'camparams', 'skeleton'), files); 
+           camparams = data(1).camparams;
+           skeleton = data(1).skeleton;
+           
+           labelGui = Label3D(camparams, videos, skeleton, varargin{:});
+           labelGui.loadFrom3D(pts3d)
+           labelGui.status = status;
+           labelGui.update()
+       end 
+        
+       function labelGui = loadFromState(file, videos, varargin)
+           temp = load(file);
+           camparams = temp.camparams;
+           skeleton = temp.skeleton;
+           labelGui = Label3D(camparams, videos, skeleton, varargin{:});
+           labelGui.loadState(file)
+       end
+        
+       function labelGui = loadAll(path, varargin)
+           temp = load(path);
+           labelGui = Label3D(temp.camparams, temp.videos, temp.skeleton, varargin{:});
+           labelGui.loadFrom3D(temp.data_3D);
+           labelGui.status = temp.status;
+       end
+       
+       function labelGui = load()
+            file = uigetfile('*.mat','MultiSelect','off');
+            labelGui = Label3D.loadAll(file);
+       end
     end
     
     methods (Access = protected)
