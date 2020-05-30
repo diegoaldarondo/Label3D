@@ -169,7 +169,8 @@ classdef Label3D < Animator
             obj.frameInds = 1:obj.nFrames;
             obj.nMarkers = numel(obj.skeleton.joint_names);
             obj.savePath = sprintf('%s%s', obj.savePath,...
-                datestr(now,'yyyy_mm_dd_HH_MM_SS'));
+                datestr(now, 'yyyyMMdd_HHmmss_'));
+
             
             % Set up the cameras
             obj.nCams = numel(obj.origCamParams);
