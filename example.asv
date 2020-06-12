@@ -34,14 +34,15 @@ danncePath = 'Y:/Diego/code/DANNCE';
 
 %% Load in the calibration parameter data
 projectFolder = fullfile(danncePath,'demo/markerless_mouse_1');
-calibPaths = collectCalibrationPaths(projectFolder);
-params = cellfun(@(X) {load(X)}, calibPaths);
+calibPaths = collectCalibrationPaths(fullfile(danncePath, projectFolder));
+params = {params1, params2, params3};
 
 %% Load the videos into memory
+basePath = fullfile(danncePath, projectFolder);
 vidName = '0.mp4';
-vidPaths = collectVideoPaths(projectFolder,vidName);
+vidPaths = collectVideoPaths(basePath,vidName);
 videos = cell(6,1);
-sync = collectSyncPaths(projectFolder);
+sync = collectSyncPaths(basePath);
 sync = cellfun(@(X) {load(X)}, sync);
 framesToLabel = 1:100;
 for nVid = 1:numel(vidPaths)

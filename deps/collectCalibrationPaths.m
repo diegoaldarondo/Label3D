@@ -3,7 +3,7 @@ function paths = collectCalibrationPaths(basePath, varargin)
         key = varargin{1};
         fn = dir(fullfile(basePath, 'calibration', key)); 
     else
-        fn = dir(fullfile(basePath, 'calibration', 'hires_cam*_params.mat')); 
+        fn = dir(fullfile(basePath, 'calibration', '*_params.mat')); 
     end
     paths = cell(numel(fn),1);
     for nFile = 1:numel(fn)

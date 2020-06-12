@@ -862,6 +862,7 @@ classdef Label3D < Animator
             % framesToLabel - Vector of frame numbers for each video frame.
             % Syntax: labelGui.exportDannce
             %         labelGui.exportDannce('basePath', path)
+            %         labelGui.exportDannce('file', file)
             %         labelGui.exportDannce('cameraNames', cameraNames)
             %         labelGui.exportDannce('framesToLabel', framesToLabel)
             defaultBasePath = '';
@@ -872,7 +873,7 @@ classdef Label3D < Animator
             validFrames = @(X) isnumeric(X) && (numel(X) == obj.nFrames);
             p = inputParser;
             addOptional(p,'basePath',defaultBasePath,validBasePath);
-%             addOptional(p,'file',defaultBasePath,validBasePath);
+            addOptional(p,'file',defaultBasePath,validBasePath);
             addOptional(p,'cameraNames',defaultCameraNames,validCameraNames);
             addOptional(p,'framesToLabel',defaultFramesToLabel,validFrames);
                             
@@ -901,13 +902,11 @@ classdef Label3D < Animator
             
             outDir = uigetdir([], 'Select output folder.');
             
-            obj.saveState;
-            p.file = obj.savePath;
-%             if isempty(p.file)
-% %                 p.file = uigetfile('*.mat','MultiSelect','off');
-%                 obj.saveState;
-%                 p.file = obj.savePath;
-%             end
+            if isempty(p.file)
+%                 p.file = uigetfile('*.mat','MultiSelect','off');
+                obj.saveState;
+                p.file = obj.savePath;
+            end
             % Load the labeling files
             labels = load(p.file);
             
@@ -940,7 +939,7 @@ classdef Label3D < Animator
                 
                 % Save out the set of labeled images.
                 data_2d = data_2D(labeled,:);
-                data_3d = labels.data_3D(labeled,:);
+                data_3d = labels(nCam).data_3D(labeled,:);
                 outPath = fullfile(outDir, sprintf('%s_Label3D_dannce.mat', p.cameraNames{nCam}));
                 save(outPath,'data_2d','data_3d','data_frame','data_sampleID')
             end

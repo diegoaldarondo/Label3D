@@ -6,7 +6,10 @@ function paths = collectVideoPaths(basePath, vidName, varargin)
        key = varargin{1}; 
        fn = dir(fullfile(basePath,key,vidName)); 
     else
-       fn = dir(fullfile(basePath,'videos','*mouse','*',vidName)); 
+       fn = dir(fullfile(basePath,'videos','Camera*','*',vidName)); 
+       if isempty(fn)
+           fn = dir(fullfile(basePath,'videos','Camera*',vidName));
+       end
     end
     paths = cell(numel(fn),1);
     for nFile = 1:numel(fn)
