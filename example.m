@@ -43,19 +43,8 @@ vid_paths{2} = 'Y:/Diego/code/DANNCE/demo/calibrd18_black6_mouseone_green/videos
 vid_paths{3} = 'Y:/Diego/code/DANNCE/demo/calibrd18_black6_mouseone_green/videos/CameraSmouse/636975888673340066/7000.mp4';
 videos = cell(3,1);
 for nVid = 1:numel(vid_paths)
-    vid = VideoReader(vid_paths{nVid});
-    V = {};
-    count = 1;
-    camParams = cameraParameters('IntrinsicMatrix',params{nVid}.K,'ImageSize',[1048 1328], 'RadialDistortion',params{nVid}.RDistort, 'TangentialDistortion',params{nVid}.TDistort);
-    while hasFrame(vid)
-        V{count} = readFrame(vid);
-        count = count+1;
-        if count == 101
-            break;
-        end
-    end
-    V = cat(4, V{1:100});
-    videos{nVid} = V;
+    vid = readFrames(vid_paths{nVid}, 1:100);
+    videos{nVid} = vid;
 end
 
 %% Get the data in an appropriate format
@@ -85,3 +74,7 @@ labelGui.plotCameras
 %% If you just wish to view labels, use View 3D
 close all
 viewGui = View3D(params, videos, skeleton);
+
+%% You can load both in different ways
+close all;
+View3D()

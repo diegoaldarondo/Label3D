@@ -10,16 +10,7 @@ classdef View3D < Label3D
             animators = [obj.h {obj} {obj.kp3a}];
         end
     end
-    
-    methods(Static)
-       function viewGui = loadAll(path, varargin)
-           temp = load(path);
-           viewGui = View3D(temp.camparams, temp.videos, temp.skeleton, varargin{:});
-           viewGui.loadFrom3D(temp.data_3D);
-           viewGui.status = temp.status;
-       end
-    end
-    
+      
     methods (Access = protected)
         function updateStatusAnimator(obj)
             % Ovverride superclass to do nothing
