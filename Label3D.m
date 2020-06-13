@@ -237,7 +237,8 @@ classdef Label3D < Animator
             % Set up the cameras
             obj.nCams = numel(obj.origCamParams);
             obj.h = cell(1);
-            obj.ImageSize = [size(videos{1},1) size(videos{1},2)];
+            obj.ImageSize = cellfun(@(x) [size(x,1); size(x,2)], videos, 'UniformOutput', false);
+            obj.ImageSize = [obj.ImageSize{:}]';
             [obj.cameraParams, obj.orientations, obj.locations] = ...
                 obj.loadCamParams(obj.origCamParams);
             obj.cameraPoses = obj.getCameraPoses();
@@ -270,8 +271,8 @@ classdef Label3D < Animator
                     'Axes', obj.h{i}.Axes);
                 ax = obj.h{obj.nCams + i}.Axes;
                 ax.Toolbar.Visible = 'off';
-                xlim(ax, [1 obj.ImageSize(2)])
-                ylim(ax, [1 obj.ImageSize(1)])
+                xlim(ax, [1 obj.ImageSize(i,2)])
+                ylim(ax, [1 obj.ImageSize(i,1)])
             end
             
             % Initialize data and accounting matrices
@@ -357,7 +358,7 @@ classdef Label3D < Animator
                 rotationVector = rotationMatrixToVector(R);
                 translationVector = camparams{i}.t;
                 c{i} = cameraParameters('IntrinsicMatrix',K,...
-                    'ImageSize',obj.ImageSize,'RadialDistortion',RDistort,...
+                    'ImageSize',obj.ImageSize(i,:),'RadialDistortion',RDistort,...
                     'TangentialDistortion',TDistort,...
                     'RotationVectors',rotationVector,...
                     'TranslationVectors',translationVector);
@@ -386,8 +387,8 @@ classdef Label3D < Animator
         function zoomOut(obj)
             % Zoom all images out to their maximum sizes.
             for i = 1:obj.nCams
-                xlim(obj.h{obj.nCams + i}.Axes, [1 obj.ImageSize(2)])
-                ylim(obj.h{obj.nCams + i}.Axes, [1 obj.ImageSize(1)])
+                xlim(obj.h{obj.nCams + i}.Axes, [1 obj.ImageSize(i,2)])
+                ylim(obj.h{obj.nCams + i}.Axes, [1 obj.ImageSize(i,1)])
             end
         end
         
