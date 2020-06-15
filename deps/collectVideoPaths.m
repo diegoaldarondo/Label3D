@@ -4,7 +4,10 @@ function paths = collectVideoPaths(basePath, vidName, varargin)
 %     fn = dir(fullfile(basePath,'videos','*mouseOG','*',vidName)); 
     if ~isempty(varargin)
        key = varargin{1}; 
-       fn = dir(fullfile(basePath,key,vidName)); 
+       fn = dir(fullfile(basePath,'videos',key,vidName));
+       if isempty(fn)
+          fn = dir(fullfile(basePath,'videos',key,'*',vidName));
+       end
     else
        fn = dir(fullfile(basePath,'videos','Camera*','*',vidName)); 
        if isempty(fn)
