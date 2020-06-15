@@ -27,7 +27,7 @@ git clone https://github.com/diegoaldarondo/Animator.git
 5. Integration with `Animator` classes
 
 ## Usage
-Requires `Matlab 2019a` or `Matlab 2019b`
+Requires `Matlab 2019b` or `Matlab 2020a`
 
 Label3D takes a cell arrays of structs of camera parameters as in
 https://github.com/spoonsso/DANNCE, a cell array of corresponding videos (h,w,c,N),
