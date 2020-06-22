@@ -245,7 +245,11 @@ classdef Label3D < Animator
             
             % Make the VideoAnimators
             for i = 1:obj.nCams
-                pos = [(i-1)/obj.nCams 0 1/obj.nCams 1];
+                if i<4
+                    pos = [2*(i-1)/obj.nCams 1/2 2/obj.nCams 1/2];
+                else
+                    pos = [2*(i-4)/obj.nCams 0 2/obj.nCams 1/2];
+                end
                 obj.h{i} = VideoAnimator(videos{i}, 'Position', pos);
                 ax = obj.h{i}.Axes;
                 ax.Toolbar.Visible = 'off';
@@ -465,6 +469,25 @@ classdef Label3D < Animator
             obj.update()
         end
         
+        function resetMarker(obj)
+            % Delete the selected nodes if they exist
+            draggableAnimators = obj.h(obj.nCams+1:2*obj.nCams);
+            fr = obj.frameInds(obj.frame);
+            markerInd = obj.selectedNode;
+            for nAnimator = 1:numel(draggableAnimators)
+                obj.status(markerInd, nAnimator, fr) = 0;
+                keyObj = draggableAnimators{nAnimator};
+                keyObj.markers(fr,:,markerInd) = nan;
+                keyObj.markersX = keyObj.markers(:,1,:);
+                keyObj.markersY = keyObj.markers(:,2,:);
+                keyObj.points.XData = squeeze(keyObj.markers(fr,1,:));
+                keyObj.points.YData = squeeze(keyObj.markers(fr,2,:));
+                keyObj.update();
+            end
+            obj.checkStatus()
+            obj.update()
+        end
+        
         function clickImage(obj, ~, ~)
             % Callback to image clicks (but not on nodes)
             % Pull out clicked point coordinate in image coordinates
@@ -605,6 +628,8 @@ classdef Label3D < Animator
                     obj.resetFrame();
                 case 'o'
                     obj.zoomOut();
+                case 'x'
+                    obj.resetMarker();
                 case 'z'
                     obj.toggleZoomIn();
                 case 'l'
