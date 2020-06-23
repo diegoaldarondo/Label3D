@@ -240,14 +240,19 @@ classdef Label3D < Animator
             % Set up the cameras
             obj.nCams = numel(obj.origCamParams);
             obj.h = cell(1);
-            obj.ImageSize = [size(videos{1},1) size(videos{1},2)];
+            obj.ImageSize = cellfun(@(x) [size(x,1); size(x,2)], videos, 'UniformOutput', false);
+            obj.ImageSize = [obj.ImageSize{:}]';
             [obj.cameraParams, obj.orientations, obj.locations] = ...
                 obj.loadcamParams(obj.origCamParams);
             obj.cameraPoses = obj.getCameraPoses();
             
             % Make the VideoAnimators
             for i = 1:obj.nCams
-                pos = [(i-1)/obj.nCams 0 1/obj.nCams 1];
+                if i<4
+                    pos = [2*(i-1)/obj.nCams 1/2 2/obj.nCams 1/2];
+                else
+                    pos = [2*(i-4)/obj.nCams 0 2/obj.nCams 1/2];
+                end
                 obj.h{i} = VideoAnimator(videos{i}, 'Position', pos);
                 ax = obj.h{i}.Axes;
                 ax.Toolbar.Visible = 'off';
@@ -273,8 +278,8 @@ classdef Label3D < Animator
                     'Axes', obj.h{i}.Axes);
                 ax = obj.h{obj.nCams + i}.Axes;
                 ax.Toolbar.Visible = 'off';
-                xlim(ax, [1 obj.ImageSize(2)])
-                ylim(ax, [1 obj.ImageSize(1)])
+                xlim(ax, [1 obj.ImageSize(i,2)])
+                ylim(ax, [1 obj.ImageSize(i,1)])
             end
             
             % Initialize data and accounting matrices
@@ -368,7 +373,7 @@ classdef Label3D < Animator
                 rotationVector = rotationMatrixToVector(R);
                 translationVector = camParams{i}.t;
                 c{i} = cameraParameters('IntrinsicMatrix',K,...
-                    'ImageSize',obj.ImageSize,'RadialDistortion',RDistort,...
+                    'ImageSize',obj.ImageSize(i,:),'RadialDistortion',RDistort,...
                     'TangentialDistortion',TDistort,...
                     'RotationVectors',rotationVector,...
                     'TranslationVectors',translationVector);
@@ -397,8 +402,8 @@ classdef Label3D < Animator
         function zoomOut(obj)
             % Zoom all images out to their maximum sizes.
             for i = 1:obj.nCams
-                xlim(obj.h{obj.nCams + i}.Axes, [1 obj.ImageSize(2)])
-                ylim(obj.h{obj.nCams + i}.Axes, [1 obj.ImageSize(1)])
+                xlim(obj.h{obj.nCams + i}.Axes, [1 obj.ImageSize(i,2)])
+                ylim(obj.h{obj.nCams + i}.Axes, [1 obj.ImageSize(i,1)])
             end
         end
         
@@ -507,6 +512,25 @@ classdef Label3D < Animator
                 end
             end
             obj.checkStatus();
+            obj.update()
+        end
+        
+        function resetMarker(obj)
+            % Delete the selected nodes if they exist
+            draggableAnimators = obj.h(obj.nCams+1:2*obj.nCams);
+            fr = obj.frameInds(obj.frame);
+            markerInd = obj.selectedNode;
+            for nAnimator = 1:numel(draggableAnimators)
+                obj.status(markerInd, nAnimator, fr) = 0;
+                keyObj = draggableAnimators{nAnimator};
+                keyObj.markers(fr,:,markerInd) = nan;
+                keyObj.markersX = keyObj.markers(:,1,:);
+                keyObj.markersY = keyObj.markers(:,2,:);
+                keyObj.points.XData = squeeze(keyObj.markers(fr,1,:));
+                keyObj.points.YData = squeeze(keyObj.markers(fr,2,:));
+                keyObj.update();
+            end
+            obj.checkStatus()
             obj.update()
         end
         
@@ -675,6 +699,8 @@ classdef Label3D < Animator
                     obj.resetFrame();
                 case 'o'
                     obj.zoomOut();
+                case 'x'
+                    obj.resetMarker();
                 case 'z'
                     obj.toggleZoomIn();
                 case 'l'
