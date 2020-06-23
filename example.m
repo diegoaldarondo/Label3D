@@ -54,7 +54,8 @@ skeleton = load('skeletons/rat16');
 
 %% Start Label3D
 close all
-labelGui = Label3D(params, videos, skeleton, 'sync', sync, 'framesToLabel', framesToLabel);
+labelGui = Label3D(params, videos, skeleton);
+% labelGui = Label3D(params, videos, skeleton, 'sync', sync, 'framesToLabel', framesToLabel);
 
 %% Check the camera positions
 labelGui.plotCameras       
