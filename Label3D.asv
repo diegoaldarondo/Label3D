@@ -324,19 +324,15 @@ classdef Label3D < Animator
             len = ceil(nViews/nRows);
             pos = zeros(numel(views), 4);
             pos(:,1) = rem(views-1, len)/len;
-            pos(:,2) = (1 - 1/nRows) - 1/nRows*(floor((views-1) / len));
+            pos(:,2) = (1 - 1/nRows) - 1/nRows*(floor(views / len));
             pos(:,3) = 1/len;
             pos(:,4) = 1/nRows;
         end
         
         function pos = getPositions(obj, nViews)
             views = 1:nViews;
-            nRows = round(sqrt(nViews));
-            if nViews > 3
-                pos = obj.positionFromNRows(views, nRows);
-            else
-                pos = obj.positionFromNRows(views, 1);
-            end
+            nRows = floor(sqrt(nViews));
+            pos = obj.positionFromNRows(views, nRows);
         end
         
         function animators = getAnimators(obj)
