@@ -324,15 +324,19 @@ classdef Label3D < Animator
             len = ceil(nViews/nRows);
             pos = zeros(numel(views), 4);
             pos(:,1) = rem(views-1, len)/len;
-            pos(:,2) = (1 - 1/nRows) - 1/nRows*(floor(views / len));
+            pos(:,2) = (1 - 1/nRows) - 1/nRows*(floor((views-1) / len));
             pos(:,3) = 1/len;
             pos(:,4) = 1/nRows;
         end
         
         function pos = getPositions(obj, nViews)
             views = 1:nViews;
-            nRows = floor(sqrt(nViews));
-            pos = obj.positionFromNRows(views, nRows);
+            nRows = round(sqrt(nViews));
+            if nViews > 3
+                pos = obj.positionFromNRows(views, nRows);
+            else
+                pos = obj.positionFromNRows(views, 1);
+            end
         end
         
         function animators = getAnimators(obj)
@@ -423,6 +427,53 @@ classdef Label3D < Animator
             end
         end
         
+        function triangulateView(obj, defScale)
+            intrinsics = cellfun(@(X) X.Intrinsics, obj.cameraParams,'uni',0);
+            intrinsics = [intrinsics{:}];    
+            frame = obj.frame;
+            meanPts = squeeze(nanmean(obj.camPoints(:, :, :, frame),1));
+            if sum(~isnan(meanPts(:,1))) < 2
+                return
+            end
+            validCam = find(~isnan(meanPts(:,1)));
+            pointTracks = pointTrack(validCam, meanPts(validCam,:));
+            xyzPt = triangulateMultiview(pointTracks,...
+                    obj.cameraPoses(validCam,:), intrinsics(validCam));
+                
+            if ~isempty(defScale)
+                xyzEdges = [xyzPt-defScale; xyzPt+defScale];
+                xyzNodes = [];
+                for i = 1:2
+                    for j = 1:2
+                        for k = 1:2
+                            xyzNodes(end+1,:) = [xyzEdges(i,1), xyzEdges(j,2), xyzEdges(k,3)];
+                        end
+                    end
+                end
+
+                for nCam = 1:obj.nCams
+                    camParam = obj.cameraParams{nCam};
+                    rotation = obj.orientations{nCam}';
+                    translation = camParam.TranslationVectors;
+                    allPts = worldToImage(camParam, rotation, translation, xyzNodes);
+                    allLim = [min(allPts); max(allPts)];
+                    ax = obj.h{nCam}.Axes;
+                    ax.XLim = allLim(:,1);
+                    ax.YLim = allLim(:,2);
+                end
+            else
+                for nCam = 1:obj.nCams
+                    camParam = obj.cameraParams{nCam};
+                    rotation = obj.orientations{nCam}';
+                    translation = camParam.TranslationVectors;
+                    pt = worldToImage(camParam, rotation, translation, xyzPt);
+                    ax = obj.h{nCam}.Axes;
+                    xP
+                    ax.XLim = allLim(:,1);
+                    ax.YLim = allLim(:,2);
+                end
+        end
+        
         function [camIds, jointIds] = getLabeledJoints(obj, frame)
             % Look within a frame and return all joints with at least two
             % labeled views, as well as a logical vector denoting which two
@@ -441,9 +492,7 @@ classdef Label3D < Animator
             
             % Find the labeled joints and corresponding cameras
             [camIds, jointIds] = obj.getLabeledJoints(fr);
-%             if sum(camIds) <=1
-%                 return; 
-%             end
+
             % For each labeled joint, triangulate with the right cameras
             xyzPoints = zeros(1, 3);
            
@@ -717,8 +766,18 @@ classdef Label3D < Animator
                     obj.zoomOut();
                 case 'x'
                     obj.resetMarker();
+                case 'a'
+                    obj.resetAspectRatio();
+                case 'v'
+                    defScale = 40;
+                    obj.triangulateView(defScale);
+%                     obj.resetAspectRatio();
                 case 'z'
-                    obj.toggleZoomIn();
+                    if ~wasShiftPressed
+                        obj.toggleZoomIn;
+                    else
+                        obj.togglePan;
+                    end
                 case 'l'
                     obj.setLabeled();
                     obj.saveState;
@@ -740,6 +799,19 @@ classdef Label3D < Animator
             
             % Extend Animator callback function
             keyPressCallback@Animator(obj,source,eventdata);
+        end
+        
+        function resetAspectRatio(obj)
+            % aspect ratio of all images is set to 1:1
+            for i = 1:obj.nCams
+                thisAx = obj.h{i}.Axes;
+                xLim = thisAx.XLim;
+                yLim = thisAx.YLim;
+                mRange = range(xLim)/2 + range(yLim)/2;
+                newRange = [-mRange/2, mRange/2];
+                thisAx.XLim = mean(thisAx.XLim) + newRange;
+                thisAx.YLim = mean(thisAx.YLim) + newRange;
+            end
         end
         
         function setFrame(obj, newFrame)
@@ -768,12 +840,10 @@ classdef Label3D < Animator
             obj.update()
         end
         
-        function toggleZoomIn(obj)
-            zoomState = zoom(obj.Parent);
-            zoomState.Direction = 'in';
-            if strcmp(zoomState.Enable,'off')
+        function toggleUiState(obj, state)
+            if strcmp(state.Enable,'off')
                 % Toggle the zoom state
-                zoomState.Enable = 'on';
+                state.Enable = 'on';
                 
                 % This trick disables window listeners that prevent
                 % the installation of custom keypresscallback
@@ -788,10 +858,21 @@ classdef Label3D < Animator
                 obj.Parent.WindowKeyPressFcn = @(src,event) Animator.runAll(obj.getAnimators,src,event);
                 obj.Parent.KeyPressFcn = [];
             else
-                zoomState.Enable = 'off';
+                state.Enable = 'off';
                 obj.Parent.WindowKeyPressFcn = @(src,event) Animator.runAll(obj.getAnimators,src,event);
                 obj.Parent.KeyPressFcn = [];
             end
+        end
+        
+        function toggleZoomIn(obj)
+            zoomState = zoom(obj.Parent);
+            zoomState.Direction = 'in';
+            obj.toggleUiState(zoomState);
+        end
+        
+        function togglePan(obj)
+            panState = pan(obj.Parent);
+            obj.toggleUiState(panState);
         end
         
         function loadFrom3D(obj, pts3d)

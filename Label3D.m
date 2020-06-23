@@ -133,6 +133,8 @@ classdef Label3D < Animator
         sync
         framesToLabel
         videoPositions
+        defScale
+        pctScale=.3
     end
     
     methods
@@ -427,7 +429,7 @@ classdef Label3D < Animator
             end
         end
         
-        function triangulateView(obj, defScale)
+        function triangulateView(obj)
             intrinsics = cellfun(@(X) X.Intrinsics, obj.cameraParams,'uni',0);
             intrinsics = [intrinsics{:}];    
             frame = obj.frame;
@@ -439,25 +441,46 @@ classdef Label3D < Animator
             pointTracks = pointTrack(validCam, meanPts(validCam,:));
             xyzPt = triangulateMultiview(pointTracks,...
                     obj.cameraPoses(validCam,:), intrinsics(validCam));
-            xyzEdges = [xyzPt-defScale; xyzPt+defScale];
-            xyzNodes = [];
-            for i = 1:2
-                for j = 1:2
-                    for k = 1:2
-                        xyzNodes(end+1,:) = [xyzEdges(i,1), xyzEdges(j,2), xyzEdges(k,3)];
+                
+            % If a global scale has been defined, use it. Otherwise use a
+            % percentage of the image size. 
+            if ~isempty(obj.defScale)
+                % Build a box in 3D to focus views
+                xyzEdges = [xyzPt - obj.defScale; xyzPt + obj.defScale];
+                xyzNodes = [];
+                for i = 1:2
+                    for j = 1:2
+                        for k = 1:2
+                            xyzNodes(end+1,:) = [xyzEdges(i,1), xyzEdges(j,2), xyzEdges(k,3)];
+                        end
                     end
                 end
-            end
-
-            for nCam = 1:obj.nCams
-                camParam = obj.cameraParams{nCam};
-                rotation = obj.orientations{nCam}';
-                translation = camParam.TranslationVectors;
-                allPts = worldToImage(camParam, rotation, translation,xyzNodes);
-                allLim = [min(allPts); max(allPts)];
-                thisAx = obj.h{nCam}.Axes;
-                thisAx.XLim = allLim(:,1);
-                thisAx.YLim = allLim(:,2);
+                
+                % Change all of the axes to fit the box. 
+                for nCam = 1:obj.nCams
+                    camParam = obj.cameraParams{nCam};
+                    rotation = obj.orientations{nCam}';
+                    translation = camParam.TranslationVectors;
+                    allPts = worldToImage(camParam, rotation, translation, xyzNodes);
+                    allLim = [min(allPts); max(allPts)];
+                    ax = obj.h{nCam}.Axes;
+                    ax.XLim = allLim(:,1);
+                    ax.YLim = allLim(:,2);
+                end
+            else
+                % Change all of the axes to surround the mean point with a
+                % window defined as a percentage of the image dimensions.
+                for nCam = 1:obj.nCams
+                    camParam = obj.cameraParams{nCam};
+                    rotation = obj.orientations{nCam}';
+                    translation = camParam.TranslationVectors;
+                    pt = worldToImage(camParam, rotation, translation, xyzPt);
+                    ax = obj.h{nCam}.Axes;
+                    xPad = obj.pctScale*camParam.Intrinsics.ImageSize(1);
+                    yPad = obj.pctScale*camParam.Intrinsics.ImageSize(2);
+                    ax.XLim = [pt(1) - xPad, pt(1) + xPad];
+                    ax.YLim = [pt(2) - yPad, pt(2) + yPad];
+                end
             end
         end
         
@@ -479,9 +502,7 @@ classdef Label3D < Animator
             
             % Find the labeled joints and corresponding cameras
             [camIds, jointIds] = obj.getLabeledJoints(fr);
-%             if sum(camIds) <=1
-%                 return; 
-%             end
+
             % For each labeled joint, triangulate with the right cameras
             xyzPoints = zeros(1, 3);
            
@@ -742,7 +763,7 @@ classdef Label3D < Animator
                     end
                     obj.reprojectPoints(obj.frameInds(obj.frame));
                     update(obj)
-%                     obj.saveState()
+                    obj.saveState()
                 case 'tab'
                     if wasShiftPressed
                         obj.selectNode(obj.selectedNode-1)
@@ -758,8 +779,7 @@ classdef Label3D < Animator
                 case 'a'
                     obj.resetAspectRatio();
                 case 'v'
-                    defScale = 0.06;
-                    obj.triangulateView(defScale);
+                    obj.triangulateView();
                     obj.resetAspectRatio();
                 case 'z'
                     if ~wasShiftPressed
@@ -829,12 +849,10 @@ classdef Label3D < Animator
             obj.update()
         end
         
-        function toggleZoomIn(obj)
-            zoomState = zoom(obj.Parent);
-            zoomState.Direction = 'in';
-            if strcmp(zoomState.Enable,'off')
+        function toggleUiState(obj, state)
+            if strcmp(state.Enable,'off')
                 % Toggle the zoom state
-                zoomState.Enable = 'on';
+                state.Enable = 'on';
                 
                 % This trick disables window listeners that prevent
                 % the installation of custom keypresscallback
@@ -849,35 +867,21 @@ classdef Label3D < Animator
                 obj.Parent.WindowKeyPressFcn = @(src,event) Animator.runAll(obj.getAnimators,src,event);
                 obj.Parent.KeyPressFcn = [];
             else
-                zoomState.Enable = 'off';
+                state.Enable = 'off';
                 obj.Parent.WindowKeyPressFcn = @(src,event) Animator.runAll(obj.getAnimators,src,event);
                 obj.Parent.KeyPressFcn = [];
             end
         end
         
+        function toggleZoomIn(obj)
+            zoomState = zoom(obj.Parent);
+            zoomState.Direction = 'in';
+            obj.toggleUiState(zoomState);
+        end
+        
         function togglePan(obj)
             panState = pan(obj.Parent);
-            if strcmp(panState.Enable,'off')
-                % Toggle the zoom state
-                panState.Enable = 'on';
-                
-                % This trick disables window listeners that prevent
-                % the installation of custom keypresscallback
-                % functions in ui default modes.
-                % See matlab.uitools.internal.uimode/setCallbackFcn
-                hManager = uigetmodemanager(obj.Parent);
-                matlab.graphics.internal.setListenerState(hManager.WindowListenerHandles,'off');
-                
-                % We need to disable normal keypress mode
-                % functionality to prevent the command window from
-                % taking focus
-                obj.Parent.WindowKeyPressFcn = @(src,event) Animator.runAll(obj.getAnimators,src,event);
-                obj.Parent.KeyPressFcn = [];
-            else
-                panState.Enable = 'off';
-                obj.Parent.WindowKeyPressFcn = @(src,event) Animator.runAll(obj.getAnimators,src,event);
-                obj.Parent.KeyPressFcn = [];
-            end
+            obj.toggleUiState(panState);
         end
         
         function loadFrom3D(obj, pts3d)
