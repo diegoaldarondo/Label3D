@@ -401,6 +401,9 @@ classdef Label3D < Animator
             intrinsics = [intrinsics{:}];    
             frame = obj.frame;
             meanPts = squeeze(nanmean(obj.camPoints(:, :, :, frame),1));
+            if sum(~isnan(meanPts(:,1))) < 2
+                return
+            end
             validCam = find(~isnan(meanPts(:,1)));
             pointTracks = pointTrack(validCam, meanPts(validCam,:));
             xyzPt = triangulateMultiview(pointTracks,...
@@ -666,6 +669,7 @@ classdef Label3D < Animator
                 case 'v'
                     defScale = 0.06;
                     obj.triangulateView(defScale);
+                    obj.resetAspectRatio();
                 case 'z'
                     if ~wasShiftPressed
                         obj.toggleZoomIn;
