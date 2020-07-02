@@ -763,7 +763,7 @@ classdef Label3D < Animator
                     end
                     obj.reprojectPoints(obj.frameInds(obj.frame));
                     update(obj)
-                    obj.saveState()
+%                     obj.saveState()
                 case 'tab'
                     if wasShiftPressed
                         obj.selectNode(obj.selectedNode-1)
