@@ -32,13 +32,14 @@ end
 
 %% Load in data
 COMs = load(comPath);
-pred = load(danncePath);
 fn = split(vidName,'.');
 start_frame = str2double(fn{1}) + 1;
 com = COMs.com(frames+start_frame,:);
-data_3d = pred.pred(frames+start_frame,:,:);
 if comOnly
-    data_3d = zeros(size(data_3d));
+    data_3d = zeros(numel(frames), 3, numel(skeleton.joint_names));
+else
+    pred = load(danncePath);
+    data_3d = pred.pred(frames+start_frame,:,:);
 end
 if smooth
     data_3d = smoothdata(smoothdata(data_3d + com,'movmedian',3),'gaussian',5);
