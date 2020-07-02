@@ -316,6 +316,26 @@ classdef Label3D < Animator
             obj.setUpKeypointTable();
         end
         
+        function pos = positionFromNRows(obj, views, nRows)
+            nViews = numel(views);
+            len = ceil(nViews/nRows);
+            pos = zeros(numel(views), 4);
+            pos(:,1) = rem(views-1, len)/len;
+            pos(:,2) = (1 - 1/nRows) - 1/nRows*(floor((views-1) / len));
+            pos(:,3) = 1/len;
+            pos(:,4) = 1/nRows;
+        end
+        
+        function pos = getPositions(obj, nViews)
+            views = 1:nViews;
+            nRows = floor(sqrt(nViews));
+            if nViews > 3
+                pos = obj.positionFromNRows(views, nRows);
+            else
+                pos = obj.positionFromNRows(views, 1);
+            end
+        end
+
         function animators = getAnimators(obj)
             animators = [obj.h {obj} {obj.kp3a} {obj.statusAnimator}];
         end
@@ -918,17 +938,23 @@ classdef Label3D < Animator
         
         function add3dPlot(obj)
             % Move the other plots out of the way
+            pos = obj.getPositions(obj.nCams+1);
             for nAnimator = 1:obj.nCams
-                pos = [(nAnimator-1)/(obj.nCams + 1) 0 1/(obj.nCams + 1) 1];
-                set(obj.h{nAnimator},'Position',pos)
-                set(obj.h{nAnimator+obj.nCams},'Position',pos)
+                set(obj.h{nAnimator},'Position',pos(nAnimator,:))
+                set(obj.h{nAnimator+obj.nCams},'Position',pos(nAnimator,:))
             end
             pad = .05;
             % Add the 3d plot in the right place
-            pos = [obj.nCams/(obj.nCams + 1)+pad pad 1/(obj.nCams + 1)-2*pad 1-2*pad];
-            lims = [-400 400];
+            pad = .1*1/(obj.nCams+1);
+            pos = pos(end,:) + [pad pad -2*pad -2*pad];
+            xyz_center = nanmean(obj.points3D(:,:,obj.frame));
+            if ~isempty(obj.defScale) && isfinite(sum(xyz_center))
+                lims = [xyz_center-obj.defScale; xyz_center+obj.defScale];
+            else
+                lims = [-400 400; -400 400; -400 400;]';
+            end
             set(obj.kp3a.Axes,'Position',pos,'Visible','on',...
-                'XLim',lims,'YLim',lims,'ZLim',lims)
+                'XLim',lims(:,1),'YLim',lims(:,2),'ZLim',lims(:,3))
             arrayfun(@(X) set(X, 'Visible','on'), obj.kp3a.PlotSegments);
             obj.isKP3Dplotted = true;
         end
