@@ -994,10 +994,10 @@ classdef Label3D < Animator
                 framesToLabel = obj.framesToLabel;
                 save(path, 'data_3D', 'status',...
                     'skeleton', 'imageSize', 'cameraPoses','camParams',...
-                    'sync','framesToLabel', '-v7.3')
+                    'sync','framesToLabel')
             else
                 save(path, 'data_3D', 'status',...
-                    'skeleton', 'imageSize', 'cameraPoses','camParams', '-v7.3')
+                    'skeleton', 'imageSize', 'cameraPoses','camParams')
             end
         end
         
@@ -1155,12 +1155,13 @@ classdef Label3D < Animator
                                    'data_sampleID', data_sampleID);
             end
             outPath = fullfile(outDir, sprintf('%sLabel3D_dannce.mat', obj.sessionDatestr));
-            camParams = obj.origCamParams;
+            params = obj.origCamParams;
+            camnames = p.cameraNames;
             if ~isempty(obj.sync)
                 sync = obj.sync;
-                save(outPath,'labelData','camParams','sync','-v7.3')
+                save(outPath,'labelData','params','sync','camnames')
             else
-                save(outPath,'labelData','camParams','-v7.3')
+                save(outPath,'labelData','params','camnames')
             end
         end
     end
