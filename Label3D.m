@@ -198,7 +198,7 @@ classdef Label3D < Animator
                 end
             end
             
-            % Ask for files to load
+            % Ask for files to load, or load in multiple files.
             obj.load(varargin{:})
         end
         
