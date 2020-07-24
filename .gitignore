@@ -3,4 +3,5 @@ sandbox.m
 archive
 viewResults.m
 .git
+deps/geom2d
 *.asv
