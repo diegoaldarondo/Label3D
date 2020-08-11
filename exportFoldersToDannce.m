@@ -23,4 +23,4 @@ sync = arrayfun(@(X) {load(fullfile(X.folder, X.name))}, sync(p.order));
 labelData = arrayfun(@(X) {load(fullfile(X.folder, X.name))}, labeling(p.order));
 params = arrayfun(@(X) {load(fullfile(X.folder, X.name))}, calibration(p.order));
 path = fullfile(baseDir, 'label3d_dannce.mat');
-save(path, 'sync','labelData','params','-v7.3')
+save(path, 'sync','labelData','params')
