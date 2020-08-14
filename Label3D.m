@@ -1090,7 +1090,7 @@ classdef Label3D < Animator
             for i = 1:numel(defaultCameraNames)
                 defaultCameraNames{i} = sprintf('Camera%d', i);
             end
-            disp(defaultCameraNames)
+%             disp(defaultCameraNames)
             defaultFramesToLabel = obj.framesToLabel;
             validBasePath = @(X) ischar(X) || isstring(X);
             validCameraNames = @(X) iscell(X) && (numel(X) == obj.nCams);
@@ -1164,6 +1164,10 @@ classdef Label3D < Animator
             camnames = p.cameraNames;
             if ~isempty(obj.sync)
                 sync = obj.sync;
+                for nSync = 1:length(sync)
+                    sync{nSync}.data_2d = logical(sync{nSync}.data_2d);
+                    sync{nSync}.data_3d = logical(sync{nSync}.data_3d);
+                end
                 save(outPath,'labelData','params','sync','camnames')
             else
                 save(outPath,'labelData','params','camnames')
