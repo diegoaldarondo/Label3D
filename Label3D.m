@@ -1,12 +1,39 @@
 classdef Label3D < Animator
     %Label3D - Label3D is a GUI for manual labeling of 3D keypoints in multiple cameras.
     %
-    % Its main features include:
-    % 1. Simultaneous viewing of any number of camera views.
-    % 2. Multiview triangulation of 3D keypoints.
-    % 3. Point-and-click and draggable gestures to label keypoints.
-    % 4. Zooming, panning, and other default Matlab gestures
-    % 5. Integration with Animator classes.
+    %Input format 1: Build from scratch
+    %   camParams: Cell array of structures denoting camera
+    %              parameters for each camera.
+    %           Structure has five fields:
+    %               K - Intrinsic Matrix
+    %               RDistort - Radial distortion
+    %               TDistort - Tangential distortion
+    %               r - Rotation matrix
+    %               t - Translation vector
+    %   videos: Cell array of h x w x c x nFrames videos.
+    %   skeleton: Structure with three fields:
+    %       skeleton.color: nSegments x 3 matrix of RGB values
+    %       skeleton.joints_idx: nSegments x 2 matrix of integers
+    %           denoting directed edges between markers.
+    %       skeleton.joint_names: cell array of names of each joint
+    %   Syntax: Label3D(camParams, videos, skeleton, varargin);
+    %
+    %Input format 2: Load from state
+    %   file: Path to saved Label3D state file (with or without
+    %   video)
+    %   videos: Cell array of h x w x c x nFrames videos.
+    %   Syntax: Label3D(file, videos, varargin);
+    %
+    %Input format 3: Load from file
+    %   file: Path to saved Label3D state file (with video)
+    %   Syntax: Label3D(file, varargin);
+    %
+    %Input format 4: Load and merge multiple files
+    %   file: cell array of paths to saved Label3D state files (with video)
+    %   Syntax: Label3D(file, varargin);
+    %
+    %Input format 5: Load GUI file selection
+    %   Syntax: Label3D(varargin);
     %
     % Instructions:
     % right: move forward one frameRate
@@ -174,8 +201,7 @@ classdef Label3D < Animator
             %
             %Input format 5: Load GUI file selection
             %   Syntax: Label3D(varargin);
-            %
-            %
+            
             % User defined inputs
             obj@Animator('Visible','off');
             
@@ -253,13 +279,13 @@ classdef Label3D < Animator
             if isempty(obj.videoPositions)
                 obj.videoPositions = obj.getPositions(obj.nCams);
             end
-            for i = 1:obj.nCams
-                pos = obj.videoPositions(i, :);
-                obj.h{i} = VideoAnimator(videos{i}, 'Position', pos);
-                ax = obj.h{i}.Axes;
+            for nCam = 1:obj.nCams
+                pos = obj.videoPositions(nCam, :);
+                obj.h{nCam} = VideoAnimator(videos{nCam}, 'Position', pos);
+                ax = obj.h{nCam}.Axes;
                 ax.Toolbar.Visible = 'off';
                 set(ax,'XTick',[],'YTick',[]);
-                set(obj.h{i}.img,'ButtonDownFcn',@obj.clickImage);
+                set(obj.h{nCam}.img,'ButtonDownFcn',@obj.clickImage);
             end
             
             % If there are initialized markers, save them in
@@ -274,14 +300,14 @@ classdef Label3D < Animator
             end
             
             % Make the Draggable Keypoint Animators
-            for i = 1:obj.nCams
-                obj.h{obj.nCams + i} = ...
-                    DraggableKeypoint2DAnimator(obj.markers{i}, obj.skeleton,...
-                    'Axes', obj.h{i}.Axes);
-                ax = obj.h{obj.nCams + i}.Axes;
+            for nCam = 1:obj.nCams
+                obj.h{obj.nCams + nCam} = ...
+                    DraggableKeypoint2DAnimator(obj.markers{nCam},...
+                    obj.skeleton, 'Axes', obj.h{nCam}.Axes);
+                ax = obj.h{obj.nCams + nCam}.Axes;
                 ax.Toolbar.Visible = 'off';
-                xlim(ax, [1 obj.ImageSize(i,2)])
-                ylim(ax, [1 obj.ImageSize(i,1)])
+                xlim(ax, [1 obj.ImageSize(nCam,2)])
+                ylim(ax, [1 obj.ImageSize(nCam,1)])
             end
             
             % Initialize data and accounting matrices
@@ -322,6 +348,15 @@ classdef Label3D < Animator
         end
         
         function pos = positionFromNRows(obj, views, nRows)
+            %POSITIONFROMNROWS - Get the axes positions of each camera view
+            %given a set number of rows
+            %
+            %Inputs: views - number of views
+            %        nRows - number of rows
+            %
+            %Syntax: obj.positionFromNRows(views, nRows)
+            %
+            %See also: GETPOSITIONS
             nViews = numel(views);
             len = ceil(nViews/nRows);
             pos = zeros(numel(views), 4);
@@ -342,10 +377,26 @@ classdef Label3D < Animator
         end
         
         function animators = getAnimators(obj)
+            %GETANIMATORS - return cell array of Animators
             animators = [obj.h {obj} {obj.kp3a} {obj.statusAnimator}];
         end
         
         function saveAll(obj)
+            %SAVEALL - Save the labeling session and images
+            %
+            %Syntax: obj.saveAll()
+            %
+            %See also: SAVESTATE, EXPORTDANNCE
+            
+            % Params to save
+            path = sprintf('%s_videos.mat', obj.savePath);
+            camParams = obj.origCamParams;
+            skeleton = obj.skeleton;
+            status = obj.status;
+            savePath = obj.savePath;
+            
+            % Since we don't store the videos in Label3D we need to extract
+            % them from the VideoAnimators
             animators = obj.getAnimators();
             videos = cell(numel(obj.origCamParams), 1);
             nVid = 1;
@@ -355,12 +406,7 @@ classdef Label3D < Animator
                 end
                 nVid = nVid + 1;
             end
-            path = sprintf('%s_videos.mat', obj.savePath);
-            camParams = obj.origCamParams;
-            skeleton = obj.skeleton;
-            status = obj.status;
-            savePath = obj.savePath;
-
+            
             % Reshape to dannce specifications
             % Only take the labeled frames
             labeledFrames = ~any(obj.status ~= obj.isLabeled, 2);
@@ -383,8 +429,14 @@ classdef Label3D < Animator
         %         end
         
         function [c, orientations, locations] = loadcamParams(obj, camParams)
-            % Helper to load in camera params into cameraParameters objects
+            %LOADCAMPARAMS - Helper to load in camera params into cameraParameters objects
             % and save the world positions.
+            %
+            % Inputs: camParams - cell array of camera parameter structs
+            %
+            % Syntax: obj.loadcamParams(camParams)
+            %
+            %See also: GETCAMERAPOSES
             [c, orientations, locations] = deal(cell(obj.nCams, 1));
             for i = 1:numel(c)
                 % Get all parameters into cameraParameters object.
@@ -407,7 +459,10 @@ classdef Label3D < Animator
         end
         
         function cameraPoses = getCameraPoses(obj)
-            % Helper function to store the camera poses for triangulation
+            %GETCAMERAPOSES -  Helper function to store the camera poses 
+            %for triangulation
+            %
+            %See also: LOADCAMPARAMS
             varNames = {'ViewId', 'Orientation', 'Location'};
             cameraPoses = [arr2cell(uint32((1:obj.nCams)))' ...
                 obj.orientations obj.locations];
@@ -422,7 +477,9 @@ classdef Label3D < Animator
         end
         
         function zoomOut(obj)
-            % Zoom all images out to their maximum sizes.
+            %ZOOMOUT - Zoom all images out to their maximum sizes.
+            %
+            %See also: TRIANGULATEVIEW
             for i = 1:obj.nCams
                 xlim(obj.h{obj.nCams + i}.Axes, [1 obj.ImageSize(i,2)])
                 ylim(obj.h{obj.nCams + i}.Axes, [1 obj.ImageSize(i,1)])
@@ -430,20 +487,29 @@ classdef Label3D < Animator
         end
         
         function triangulateView(obj)
-            intrinsics = cellfun(@(X) X.Intrinsics, obj.cameraParams,'uni',0);
-            intrinsics = [intrinsics{:}];    
+            %TRIANGULATEVIEW - Triangulate labeled points and zoom all
+            %images around those points. 
+            %
+            %Syntax: obj.triangulateView()
+            %
+            %See also: ZOOMOUT
+           
+            % Make sure there is at least one triangulated point
             frame = obj.frame;
             meanPts = squeeze(nanmean(obj.camPoints(:, :, :, frame),1));
             if sum(~isnan(meanPts(:,1))) < 2
                 return
             end
+            
+            intrinsics = cellfun(@(X) X.Intrinsics, obj.cameraParams,'uni',0);
+            intrinsics = [intrinsics{:}];
             validCam = find(~isnan(meanPts(:,1)));
             pointTracks = pointTrack(validCam, meanPts(validCam,:));
             xyzPt = triangulateMultiview(pointTracks,...
-                    obj.cameraPoses(validCam,:), intrinsics(validCam));
-                
+                obj.cameraPoses(validCam,:), intrinsics(validCam));
+            
             % If a global scale has been defined, use it. Otherwise use a
-            % percentage of the image size. 
+            % percentage of the image size.
             if ~isempty(obj.defScale)
                 % Build a box in 3D to focus views
                 xyzEdges = [xyzPt - obj.defScale; xyzPt + obj.defScale];
@@ -456,7 +522,7 @@ classdef Label3D < Animator
                     end
                 end
                 
-                % Change all of the axes to fit the box. 
+                % Change all of the axes to fit the box.
                 for nCam = 1:obj.nCams
                     camParam = obj.cameraParams{nCam};
                     rotation = obj.orientations{nCam}';
@@ -502,10 +568,10 @@ classdef Label3D < Animator
             
             % Find the labeled joints and corresponding cameras
             [camIds, jointIds] = obj.getLabeledJoints(fr);
-
+            
             % For each labeled joint, triangulate with the right cameras
             xyzPoints = zeros(1, 3);
-           
+            
             cams = camIds(jointIds == joint,:);
             pointTracks = obj.getPointTrack(fr, joint, cams);
             cams = find(cams);
@@ -514,13 +580,13 @@ classdef Label3D < Animator
             nReps = 100;
             points = pointTracks.Points;
             if size(points,1) == 0
-               return; 
+                return;
             end
             pointTracks.ViewIds = [pointTracks.ViewIds repelem(cam1, 1, nReps)];
             pointTracks.Points = cat(1, points, repmat(points(cams==cam1,:), nReps, 1));
             cams = [cams repelem(cam1, 1, nReps)];
             
-            % Do the weighted regression. 
+            % Do the weighted regression.
             xyzPoints(1,:) = triangulateMultiview(pointTracks,...
                 obj.cameraPoses(cams,:), intrinsics(cams));
             % Save the results to the points3D matrix
@@ -708,7 +774,7 @@ classdef Label3D < Animator
                 obj.status(hasMoved, nKPAnimator, f) = obj.isLabeled;
                 obj.camPoints(:, nKPAnimator, :, f) = currentMarker;
             end
-%             obj.saveState()
+            %             obj.saveState()
         end
         
         function keyPressCallback(obj,source,eventdata)
@@ -736,8 +802,8 @@ classdef Label3D < Animator
                 case 't'
                     obj.checkStatus();
                     
-                    % Check if a node is held for any of the draggable 
-                    % keypoint animators. 
+                    % Check if a node is held for any of the draggable
+                    % keypoint animators.
                     nodeIsHeld = false;
                     draggableAnimators = obj.h(obj.nCams+1:2*obj.nCams);
                     for nAnimator = 1:numel(draggableAnimators)
@@ -752,7 +818,7 @@ classdef Label3D < Animator
                     
                     % If a marker is currently held, weigh it heavily in a
                     % multiview regression, otherwise do normal multiview
-                    % regression. 
+                    % regression.
                     if nodeIsHeld
                         obj.camPoints(marker, camInFocus, :, obj.frameInds(obj.frame)) = position;
                         obj.checkStatus();
@@ -1070,10 +1136,10 @@ classdef Label3D < Animator
         function exportDannce(obj, varargin)
             %exportDannce - Export data to dannce format
             %
-            % Optional inputs: 
+            % Optional inputs:
             % basePath - Path to Dannce project folder
             % file - Path to .mat Label3D save file (with or without videos)
-            % cameraNames - cell array of camera names (in order) 
+            % cameraNames - cell array of camera names (in order)
             %   Default: {'Camera1', 'Camera2', etc.}
             % framesToLabel - Vector of frame numbers for each video frame.
             % Syntax: labelGui.exportDannce
@@ -1094,7 +1160,7 @@ classdef Label3D < Animator
             addParameter(p,'basePath',defaultBasePath,validBasePath);
             addParameter(p,'cameraNames',defaultCameraNames,validCameraNames);
             addParameter(p,'framesToLabel',defaultFramesToLabel,validFrames);
-                            
+            
             parse(p,varargin{:});
             p = p.Results;
             
@@ -1150,9 +1216,9 @@ classdef Label3D < Animator
                 data_2d = data_2D(labeled,:);
                 data_3d = labels.data_3D(labeled,:);
                 labelData{nCam} = struct('data_2d', data_2d,...
-                                   'data_3d', data_3d,...
-                                   'data_frame',data_frame,...
-                                   'data_sampleID', data_sampleID);
+                    'data_3d', data_3d,...
+                    'data_frame',data_frame,...
+                    'data_sampleID', data_sampleID);
             end
             outPath = fullfile(outDir, sprintf('%sLabel3D_dannce.mat', obj.sessionDatestr));
             params = obj.origCamParams;
@@ -1224,11 +1290,11 @@ classdef Label3D < Animator
             obj.status = stats;
             
             
-%             data = cellfun(@(X) load(X, 'sync', 'franesToLabel'), files);
-%             if isfield(data, 'framesToLabel') && isfield(data,'sync')
-%                 obj.sync = data.sync;
-%                 obj.framesToLabel = data.framesToLabel;
-%             end
+            %             data = cellfun(@(X) load(X, 'sync', 'franesToLabel'), files);
+            %             if isfield(data, 'framesToLabel') && isfield(data,'sync')
+            %                 obj.sync = data.sync;
+            %                 obj.framesToLabel = data.framesToLabel;
+            %             end
             obj.update()
         end
         
@@ -1271,7 +1337,7 @@ classdef Label3D < Animator
                 obj.loadAll(files, varargin{:});
             end
         end
-    
+        
     end
     
     methods (Access = protected)
