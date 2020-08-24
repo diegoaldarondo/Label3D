@@ -1353,16 +1353,17 @@ classdef Label3D < Animator
             % Update all of the other animators with any new data.
             for nKPAnimator = 1:obj.nCams
                 kpaId = obj.nCams+nKPAnimator;
-                kps = squeeze(obj.camPoints(:,nKPAnimator,:,:));
+                kps = zeros(obj.nMarkers, size(obj.camPoints, 3), size(obj.camPoints, 4));
+                kps(:) = obj.camPoints(:,nKPAnimator,:,:);
                 kps = permute(kps, [3 2 1]);
                 
                 obj.h{kpaId}.markers = kps;
-                obj.h{kpaId}.markersX = squeeze(kps(:,1,:));
-                obj.h{kpaId}.markersY = squeeze(kps(:,2,:));
+                obj.h{kpaId}.markersX(:) = kps(:,1,:);
+                obj.h{kpaId}.markersY(:) = kps(:,2,:);
                 
                 fr = obj.frameInds(obj.frame);
-                obj.h{kpaId}.points.XData = squeeze(kps(fr,1,:));
-                obj.h{kpaId}.points.YData = squeeze(kps(fr,2,:));
+                obj.h{kpaId}.points.XData(:) = kps(fr,1,:);
+                obj.h{kpaId}.points.YData(:) = kps(fr,2,:);
             end
             
             % Run all of the update functions.
@@ -1398,20 +1399,26 @@ classdef Label3D < Animator
                 'NumberTitle','off');
             ax = gca;
             colormap([0 0 0;.5 .5 .5;1 1 1])
-            summary = squeeze(mode(obj.status,2));
+            summary = zeros(size(obj.status,1), size(obj.status,3));
+            summary(:) = mode(obj.status,2);
             obj.statusAnimator = HeatMapAnimator(summary','Axes', ax);
             obj.statusAnimator.c.Visible = 'off';
             ax = obj.statusAnimator.Axes;
             set(ax, 'YTick',1:obj.nMarkers,'YTickLabels',obj.skeleton.joint_names)
             yyaxis(ax,'right')
-            set(ax,'YLim',[1 obj.nMarkers],'YTick',1:obj.nMarkers,'YTickLabels',sum(summary,2))
+            if obj.nMarkers == 1
+                set(ax,'YLim',[.5 1.5],'YTick',1,'YTickLabels',sum(summary,2))
+            else
+                set(ax,'YLim',[1 obj.nMarkers],'YTick',1:obj.nMarkers,'YTickLabels',sum(summary,2))
+            end
             set(obj.statusAnimator.img,'CDataMapping','direct')
             obj.counter = title(sprintf('Total: %d',sum(any(summary==obj.isLabeled,1))));
         end
         
         function updateStatusAnimator(obj)
             obj.checkStatus();
-            summary = squeeze(mode(obj.status,2));
+            summary = zeros(size(obj.status,1), size(obj.status,3));
+            summary(:) = mode(obj.status,2);
             obj.statusAnimator.img.CData = summary+1;
             yyaxis(obj.statusAnimator.Axes,'right')
             set(obj.statusAnimator.Axes,'YTickLabels',flip(sum(summary==obj.isLabeled,2)))
