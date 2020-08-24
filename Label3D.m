@@ -367,8 +367,16 @@ classdef Label3D < Animator
         end
         
         function pos = getPositions(obj, nViews)
+            %GETPOSITIONS - Get the axes positions of each camera view
+            %
+            %
+            %Inputs: nViews - number of views
+            %
+            %Syntax: obj.getPositions(views, nRows)
+            %
+            %See also: POSITIONFROMNROWS
             views = 1:nViews;
-            nRows = round(sqrt(nViews));
+            nRows = floor(sqrt(nViews));
             if nViews > 3
                 pos = obj.positionFromNRows(views, nRows);
             else
