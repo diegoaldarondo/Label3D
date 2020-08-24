@@ -41,8 +41,17 @@ params = cellfun(@(X) {load(X)}, calibPaths);
 vidName = '0.mp4';
 vidPaths = collectVideoPaths(projectFolder,vidName);
 videos = cell(6,1);
-sync = collectSyncPaths(projectFolder);
+sync = collectSyncPaths(projectFolder, '*.mat');
 sync = cellfun(@(X) {load(X)}, sync);
+
+% In case the demo folder uses the dannce.mat data format. 
+if isempty(sync)
+    dannce_file = dir(fullfile(projectFolder, '*dannce.mat'));
+    dannce = load(fullfile(dannce_file(1).folder, dannce_file(2).name));
+    sync = dannce.sync;
+    params = dannce.params;
+end
+
 framesToLabel = 1:100;
 for nVid = 1:numel(vidPaths)
     frameInds = sync{nVid}.data_frame(framesToLabel);
@@ -51,10 +60,11 @@ end
 
 %% Get the skeleton
 skeleton = load('skeletons/rat16');
+% skeleton = load('com');
 
 %% Start Label3D
 close all
-labelGui = Label3D(params(1:4), videos(1:4), skeleton);
+labelGui = Label3D(params, videos, skeleton);
 % labelGui = Label3D(params, videos, skeleton, 'sync', sync, 'framesToLabel', framesToLabel);
 
 %% Check the camera positions
