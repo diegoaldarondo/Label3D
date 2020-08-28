@@ -562,7 +562,8 @@ classdef Label3D < Animator
             % Look within a frame and return all joints with at least two
             % labeled views, as well as a logical vector denoting which two
             % views.
-            s = squeeze(obj.status(:,:,frame));
+            s = zeros(size(obj.status,1), size(obj.status,2));
+            s(:) = obj.status(:,:,frame);
             labeled = s == obj.isLabeled | s == obj.isInitialized;
             jointIds = find(sum(labeled, 2) >= 2);
             camIds = labeled(jointIds, :);
@@ -675,8 +676,8 @@ classdef Label3D < Animator
                 keyObj.markers(fr,:,markerInd) = nan;
                 keyObj.markersX = keyObj.markers(:,1,:);
                 keyObj.markersY = keyObj.markers(:,2,:);
-                keyObj.points.XData = squeeze(keyObj.markers(fr,1,:));
-                keyObj.points.YData = squeeze(keyObj.markers(fr,2,:));
+                keyObj.points.XData(:) = keyObj.markers(fr,1,:);
+                keyObj.points.YData(:) = keyObj.markers(fr,2,:);
                 keyObj.update();
             end
             obj.checkStatus()
@@ -763,15 +764,16 @@ classdef Label3D < Animator
             for nKPAnimator = 1:obj.nCams
                 kpAnimator = obj.h{obj.nCams+nKPAnimator};
                 currentMarker = kpAnimator.getCurrentFramePositions();
-                
+
                 % If there were initializations, use those, otherwise
                 % just check for non-nans.
                 if isempty(obj.initialMarkers)
                     hasMoved = any(~isnan(currentMarker),2);
                     obj.status(~hasMoved, nKPAnimator, f) = 0;
                 else
-                    iM = squeeze(obj.initialMarkers{nKPAnimator}(f,:,:))';
                     cM = currentMarker;
+                    iM = zeros(size(cM));
+                    iM(:) = permute(obj.initialMarkers{nKPAnimator}(f,:,:), [1 3 2]);
                     isDeleted = any(isnan(cM),2);
                     iM(isnan(iM)) = 0;
                     cM(isnan(cM)) = 0;
@@ -782,7 +784,7 @@ classdef Label3D < Animator
                 obj.status(hasMoved, nKPAnimator, f) = obj.isLabeled;
                 obj.camPoints(:, nKPAnimator, :, f) = currentMarker;
             end
-            %             obj.saveState()
+            % obj.saveState()
         end
         
         function keyPressCallback(obj,source,eventdata)
@@ -986,7 +988,8 @@ classdef Label3D < Animator
                 obj.reprojectPoints(nFrame);
             end
             for nAnimator = 1:obj.nCams
-                impts = squeeze(obj.camPoints(:,nAnimator,:,:));
+                impts = zeros(size(obj.camPoints,1),size(obj.camPoints,3), size(obj.camPoints,4));
+                impts(:) = obj.camPoints(:,nAnimator,:,:);
                 obj.initialMarkers{nAnimator} = permute(impts, [3 2 1]);
             end
             obj.update()
@@ -1198,7 +1201,9 @@ classdef Label3D < Animator
             labelData = cell(nCameras, 1);
             for nCam = 1:nCameras
                 % Find corresponding sampleIds
-                labeled = any(squeeze(~any(labels.status ~= obj.isLabeled, 2)),1);
+                labeled = zeros(size(labels.status,1), size(labels.status,3));
+                labeled(:) = ~any(labels.status ~= obj.isLabeled, 2);
+                labeled = any(labeled,1);
                 data_sampleID = obj.sync{nCam}.data_sampleID(p.framesToLabel);
                 data_frame = obj.sync{nCam}.data_frame(p.framesToLabel);
                 data_sampleID = data_sampleID(labeled);
