@@ -750,8 +750,6 @@ classdef Label3D < Animator
             grid on
             axis equal;
             daspect(ax, [1 1 1]);
-            %             set(ax,'FontSize',16,'XLim',[-500 500],...
-            %                 'YLim',[-500 500],'ZLim',[0 500]);
             xlabel('X')
             ylabel('Y')
             zlabel('Z')
@@ -1150,6 +1148,7 @@ classdef Label3D < Animator
             % Optional inputs:
             % basePath - Path to Dannce project folder
             % file - Path to .mat Label3D save file (with or without videos)
+            % saveFolder - Folder in which to save dannce.mat file
             % cameraNames - cell array of camera names (in order)
             %   Default: {'Camera1', 'Camera2', etc.}
             % framesToLabel - Vector of frame numbers for each video frame.
@@ -1157,26 +1156,30 @@ classdef Label3D < Animator
             %         labelGui.exportDannce('basePath', path)
             %         labelGui.exportDannce('cameraNames', cameraNames)
             %         labelGui.exportDannce('framesToLabel', framesToLabel)
+            %         labelGui.exportDannce('saveFolder', saveFolder)
             defaultBasePath = '';
             defaultCameraNames = cell(obj.nCams,1);
             for i = 1:numel(defaultCameraNames)
                 defaultCameraNames{i} = sprintf('Camera%d', i);
             end
-            disp(defaultCameraNames)
             defaultFramesToLabel = obj.framesToLabel;
             validBasePath = @(X) ischar(X) || isstring(X);
             validCameraNames = @(X) iscell(X) && (numel(X) == obj.nCams);
             validFrames = @(X) isnumeric(X) && (numel(X) == obj.nFrames);
+            defaultSaveFolder = '';
             p = inputParser;
             addParameter(p,'basePath',defaultBasePath,validBasePath);
             addParameter(p,'cameraNames',defaultCameraNames,validCameraNames);
             addParameter(p,'framesToLabel',defaultFramesToLabel,validFrames);
-            
+            addParameter(p,'saveFolder',defaultSaveFolder,validBasePath);
+           
             parse(p,varargin{:});
             p = p.Results;
-            
             if isempty(p.framesToLabel)
-                error('Frame numbers for each frame in videos must be provided. See help Label3D.exportDannce')
+                error('exportDannce:FrameNumbersMustBeProvided', [ ...
+                    'Frame numbers for each frame in videos must be provided.\n' ... 
+                    'framesToLabel - Vector of frame numbers for each video frame.\n' ... 
+                    'labelGui.exportDannce(''''framesToLabel'''', framesToLabel)'])
             end
             
             % Load the matched frames files if necessary
@@ -1188,11 +1191,16 @@ classdef Label3D < Animator
                 obj.sync = cellfun(@(X) {load(X)}, obj.sync);
             end
             
-            outDir = uigetdir([], 'Select output folder.');
+            % Setup the save folder
+            if isempty(p.saveFolder)
+                outDir = uigetdir([], 'Select output folder.');
+            else
+                outDir = p.saveFolder;
+            end
             
+            % Save the state and use the data for export
             obj.saveState;
             p.file = obj.savePath;
-            % Load the labeling files
             labels = load(p.file);
             
             
@@ -1301,13 +1309,6 @@ classdef Label3D < Animator
             obj.buildFromScratch(camParams, videos, skel, varargin{:});
             obj.loadFrom3D(pts3d)
             obj.status = stats;
-            
-            
-            %             data = cellfun(@(X) load(X, 'sync', 'franesToLabel'), files);
-            %             if isfield(data, 'framesToLabel') && isfield(data,'sync')
-            %                 obj.sync = data.sync;
-            %                 obj.framesToLabel = data.framesToLabel;
-            %             end
             obj.update()
         end
         
