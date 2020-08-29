@@ -12,11 +12,9 @@ classdef Label3DTest < matlab.unittest.TestCase
         function addLabel3DClassToPath(testCase)
             p = path;
             testCase.addTeardown(@path,p);
-            addpath(fullfile(pwd, 'test'));
-            addpath(fullfile(pwd, 'skeletons'));
-            addpath(genpath(fullfile(pwd, 'deps')));
+            addpath(fullfile(pwd, '..'));
             
-            setup = load('test/test.mat');
+            setup = load('test.mat');
             testCase.camParams = setup.camParams;
             testCase.videos = setup.videos;
             testCase.skeleton = load('rat16.mat');
@@ -25,19 +23,29 @@ classdef Label3DTest < matlab.unittest.TestCase
     
     methods (TestMethodSetup)
         function createLabel3D(testCase)
-            testCase.TestLabelGui = Label3D('test/test.mat');
+            testCase.TestLabelGui = Label3D('test.mat');
         end
     end
     
     
     methods (TestMethodTeardown)
         function closeLabel3D(testCase)
+            savePaths = ...
+                {[testCase.TestLabelGui.savePath '.mat'] ...
+                 [testCase.TestLabelGui.savePath '_videos.mat'] ...
+                 sprintf('%s_dannce.mat', testCase.TestLabelGui.savePath)};
+            for nSavePath = 1:numel(savePaths)
+                if exists(savePaths{nSavePath})
+                    delete(savePaths{nSavePath})
+                end
+            end
+            
             close(testCase.TestLabelGui.statusAnimator.Parent)
             close(testCase.TestLabelGui.jointsPanel.Parent)
             close(testCase.TestLabelGui.Parent)
         end
     end
-
+    
     %% Test Method Block
     methods (Test)
         
@@ -49,43 +57,48 @@ classdef Label3DTest < matlab.unittest.TestCase
         
         function testLabel3DConstructionFromState(testCase)
             testCase.closeLabel3D()
-            testCase.TestLabelGui = Label3D('test/labels1.mat', testCase.videos);
+            testCase.TestLabelGui = Label3D('labels1.mat', testCase.videos);
             testCase.verifyClass(testCase.TestLabelGui, "Label3D");
         end
-          
+        
         function testLabel3DConstructionFromFile(testCase)
             testCase.closeLabel3D()
-            testCase.TestLabelGui = Label3D('test/test.mat');
+            testCase.TestLabelGui = Label3D('test.mat');
             testCase.verifyClass(testCase.TestLabelGui, "Label3D");
         end
         
         function testLabel3DConstructionMerge(testCase)
             testCase.closeLabel3D()
-            testCase.TestLabelGui = Label3D({'test/test.mat', 'test/test.mat'});
+            testCase.TestLabelGui = Label3D({'test.mat', 'test.mat'});
             testCase.verifyClass(testCase.TestLabelGui, "Label3D");
         end
         
         function testLabel3DExportDannceFailsIfNoFrameNumbersProvided(testCase)
             testCase.TestLabelGui.framesToLabel=[];
-            test = @() testCase.TestLabelGui.exportDannce('saveFolder','test');
+            test = @() testCase.TestLabelGui.exportDannce('saveFolder','.');
             testCase.verifyError(test, 'exportDannce:FrameNumbersMustBeProvided')
         end
         
         function testLabel3DExportDannce(testCase)
-            testCase.TestLabelGui.exportDannce('saveFolder','test','framesToLabel', 1:3)
-            file = sprintf('test/%s_dannce.mat', testCase.TestLabelGui.savePath);
+            nFrames = size(testCase.videos{1},4);
+            testCase.TestLabelGui.exportDannce('saveFolder','.','framesToLabel', 1:nFrames)
+            file = sprintf('%s_dannce.mat', testCase.TestLabelGui.savePath);
             dannce = load(file);
-            testCase.verifyEqual(size(dannce.labelData{1}.data_3d), [1 48])
+            nDims = numel(testCase.TestLabelGui.skeleton.joint_names)*3;
+            testCase.verifyEqual(size(dannce.labelData{1}.data_3d), [1 nDims])
             testCase.verifyEqual(dannce.labelData{1}.data_frame, 0)
             testCase.verifyEqual(dannce.labelData{1}.data_sampleID, 1)
-            delete(sprintf('test/%s_dannce.mat', testCase.TestLabelGui.savePath))
-            delete([testCase.TestLabelGui.savePath '.mat'])
         end
         
         function testLabel3DTriangulate(testCase)
             eventdata.Key = 't';
             testCase.TestLabelGui.keyPressCallback([], eventdata)
-            delete([testCase.TestLabelGui.savePath '.mat'])
+        end
+        
+        function testLabel3DReprojectPoints(testCase)
+            previousCamPoints = testCase.TestLabelGui.camPoints;
+            testCase.TestLabelGui.reprojectPoints(1)
+            testCase.verifyEqual(previousCamPoints, testCase.TestLabelGui.camPoints)
         end
         
         function testLabel3DTab(testCase)
@@ -93,7 +106,7 @@ classdef Label3DTest < matlab.unittest.TestCase
             eventdata.Key = 'tab';
             testCase.TestLabelGui.keyPressCallback([], eventdata)
             testCase.verifyEqual(testCase.TestLabelGui.selectedNode, previousNode+1);
-        end  
+        end
         
         function testLabel3DResetFrame(testCase)
             eventdata.Key = 'u';
@@ -116,18 +129,37 @@ classdef Label3DTest < matlab.unittest.TestCase
             eventdata.Key = 'l';
             testCase.TestLabelGui.keyPressCallback([], eventdata)
             testCase.verifyEqual(sum(testCase.TestLabelGui.status(:)), 72);
-            delete([testCase.TestLabelGui.savePath '.mat'])
+        end
+        
+        function testLabel3D3DPlot(testCase)
+            % Turn on the 3d plot
+            eventdata.Key = 'p';
+            testCase.TestLabelGui.keyPressCallback([], eventdata)
+            testCase.verifyEqual(...
+                testCase.TestLabelGui.kp3a.Axes.Visible,...
+                matlab.lang.OnOffSwitchState('on'))
+            
+            % Turn off the 3d plot
+            testCase.TestLabelGui.keyPressCallback([], eventdata)
+            testCase.verifyEqual(...
+                testCase.TestLabelGui.kp3a.Axes.Visible,...
+                matlab.lang.OnOffSwitchState('off'))
         end
         
         function testLabel3DSaveAll(testCase)
             testCase.TestLabelGui.saveAll
             savePath = [testCase.TestLabelGui.savePath '_videos.mat'];
             saved = load(savePath);
-            reference = load('test/test.mat');
+            reference = load('test.mat');
             reference.savePath = saved.savePath;
             testCase.verifyEqual(saved, reference)
-            delete(savePath)
         end
         
+        function testLabel3DPageUp(testCase)
+            eventdata.Key = 'pageup';
+            testCase.TestLabelGui.keyPressCallback([], eventdata)
+            testCase.verifyEqual(testCase.TestLabelGui.selectedNode, 1)
+            testCase.verifyEqual(testCase.TestLabelGui.jointsControl.Value, 1)
+        end
     end
 end
