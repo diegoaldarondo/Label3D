@@ -162,6 +162,8 @@ classdef Label3D < Animator
         videoPositions
         defScale
         pctScale=.3
+        DragPointColor=[1 1 1];
+        visibleDragPoints=true;
     end
     
     methods
@@ -303,7 +305,9 @@ classdef Label3D < Animator
             for nCam = 1:obj.nCams
                 obj.h{obj.nCams + nCam} = ...
                     DraggableKeypoint2DAnimator(obj.markers{nCam},...
-                    obj.skeleton, 'Axes', obj.h{nCam}.Axes);
+                    obj.skeleton, 'Axes', obj.h{nCam}.Axes,...
+                    'visibleDragPoints',obj.visibleDragPoints,...
+                    'DragPointColor',obj.DragPointColor);
                 ax = obj.h{obj.nCams + nCam}.Axes;
                 ax.Toolbar.Visible = 'off';
                 xlim(ax, [1 obj.ImageSize(nCam,2)])
@@ -345,6 +349,13 @@ classdef Label3D < Animator
             
             % Set up the keypoint table figure
             obj.setUpKeypointTable();
+            
+            % Limit the default interactivity to useful interactions
+            for nAx = 1:numel(obj.Parent.Children)
+                ax = obj.Parent.Children(nAx);
+                disableDefaultInteractivity(ax);
+                ax.Interactions = [zoomInteraction regionZoomInteraction rulerPanInteraction];
+            end
         end
         
         function pos = positionFromNRows(obj, views, nRows)
