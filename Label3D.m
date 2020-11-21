@@ -882,7 +882,9 @@ classdef Label3D < Animator
                 case 'f'
                     newFrame = inputdlg('Enter frame number:');
                     newFrame = str2double(newFrame);
-                    obj.setFrame(newFrame)
+                    if isnumeric(newFrame) && ~isempty(newFrame) && ~isnan(newFrame)
+                       obj.setFrame(newFrame) 
+                    end
                 case 'p'
                     if ~obj.isKP3Dplotted
                         obj.add3dPlot();
