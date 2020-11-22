@@ -27,7 +27,7 @@ git clone https://github.com/diegoaldarondo/Animator.git
 5. Integration with `Animator` classes
 
 ## Usage
-Requires `Matlab 2019b` or `Matlab 2020a`
+Requires `Matlab 2019b`, `Matlab 2020a`, or `Matlab 2020b`
 
 Label3D takes a cell arrays of structs of camera parameters as in
 https://github.com/spoonsso/DANNCE, a cell array of corresponding videos (h,w,c,N),
@@ -38,23 +38,11 @@ for examples on how to format data.
 labelGui = Label3D(params, videos, skeleton);
 ```
 
-## Instructions
-**right**: move forward one frameRate<br>
-**left**: move backward one frameRate<br>
-**up**: increase the frameRate<br>
-**down**: decrease the frameRate<br>
-**t**: triangulate points in current frame that have been labeled or initialized in at least two images and reproject into each image<br>
-**r**: reset gui to the first frame and remove Animator restrictions<br>
-**u**: reset the current frame to the initial marker positions<br>
-**l**: Set all keypoints to labeled state<br>
-**z**: Toggle zoom state<br>
-**p**: Show 3d animation plot of the triangulated points.<br>
-**backspace**: reset currently held node (first click and hold, then backspace to delete)<br>
-**pageup**: Set the selectedNode to the first node<br>
-**tab**: shift the selected node by 1<br>
-**shift+tab**: shift the selected node by -1<br>
-**h**: print help messages for all Animators<br>
-**shift+s**: Save the data to a .mat file
+## [Manual](https://github.com/diegoaldarondo/Label3D/wiki)
+* [About](https://github.com/diegoaldarondo/Label3D/wiki/About)
+* [Documentation](https://github.com/diegoaldarondo/Label3D/wiki/Documentation)
+* [Gestures and hotkeys](https://github.com/diegoaldarondo/Label3D/wiki/Gestures-and-hotkeys)
+* [Setup](https://github.com/diegoaldarondo/Label3D/wiki/Setup)
 
 Written by Diego Aldarondo (2019)
 
