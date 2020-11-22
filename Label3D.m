@@ -1189,7 +1189,7 @@ classdef Label3D < Animator
             %         labelGui.exportDannce('framesToLabel', framesToLabel)
             %         labelGui.exportDannce('saveFolder', saveFolder)
             defaultBasePath = '';
-            defaultCameraNames = cell(obj.nCams,1);
+            defaultCameraNames = cell(1, obj.nCams);
             for i = 1:numel(defaultCameraNames)
                 defaultCameraNames{i} = sprintf('Camera%d', i);
             end
