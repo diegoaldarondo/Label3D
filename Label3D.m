@@ -162,7 +162,7 @@ classdef Label3D < Animator
         framesToLabel
         videoPositions
         defScale
-        pctScale=.3
+        pctScale=.2
         DragPointColor=[1 1 1];
         visibleDragPoints=true;
     end
