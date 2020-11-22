@@ -135,6 +135,7 @@ classdef Label3D < Animator
     end
     
     properties (Access = public)
+        autosave = true
         clipboard
         origCamParams
         cameraParams
@@ -794,7 +795,9 @@ classdef Label3D < Animator
                 obj.status(hasMoved, nKPAnimator, f) = obj.isLabeled;
                 obj.camPoints(:, nKPAnimator, :, f) = currentMarker;
             end
-            % obj.saveState()
+            if obj.autosave
+                obj.saveState()
+            end
         end
         
         function keyPressCallback(obj,source,eventdata)
@@ -849,7 +852,9 @@ classdef Label3D < Animator
                     end
                     obj.reprojectPoints(obj.frameInds(obj.frame));
                     update(obj)
-                    obj.saveState()
+                    if obj.autosave
+                        obj.saveState()
+                    end
                 case 'tab'
                     if wasShiftPressed
                         obj.selectNode(obj.selectedNode-1)
@@ -885,7 +890,9 @@ classdef Label3D < Animator
                     end
                 case 'l'
                     obj.setLabeled();
-                    obj.saveState;
+                    if obj.autosave
+                        obj.saveState()
+                    end
                 case 'r'
                     reset(obj);
                 case 'pageup'
