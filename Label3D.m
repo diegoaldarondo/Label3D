@@ -135,6 +135,7 @@ classdef Label3D < Animator
     end
     
     properties (Access = public)
+        clipboard
         origCamParams
         cameraParams
         cameraPoses
@@ -864,8 +865,18 @@ classdef Label3D < Animator
                 case 'a'
                     obj.resetAspectRatio();
                 case 'v'
-                    obj.triangulateView();
-                    obj.resetAspectRatio();
+                    if wasCtrlPressed
+                        if ~isempty(obj.clipboard)
+                            obj.points3D(:,:,obj.frameInds(obj.frame)) = obj.clipboard.points3D;
+                            obj.status(:,:,obj.frameInds(obj.frame)) = obj.clipboard.status;
+                            disp(obj.clipboard)
+                            obj.reprojectPoints(obj.frameInds(obj.frame))
+                            obj.update()
+                        end
+                    else
+                        obj.triangulateView();
+                        obj.resetAspectRatio();
+                    end
                 case 'z'
                     if ~wasShiftPressed
                         obj.toggleZoomIn;
@@ -890,6 +901,13 @@ classdef Label3D < Animator
                         obj.add3dPlot();
                     else
                         obj.remove3dPlot();
+                    end
+                case 'c'
+                    if wasCtrlPressed
+                        cb = struct('points3D',[], 'status',[]);
+                        cb.points3D = obj.points3D(:,:,obj.frameInds(obj.frame));
+                        cb.status = obj.status(:,:,obj.frameInds(obj.frame));
+                        obj.clipboard = cb;
                     end
             end
             
