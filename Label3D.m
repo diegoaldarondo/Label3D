@@ -795,9 +795,9 @@ classdef Label3D < Animator
                 obj.status(hasMoved, nKPAnimator, f) = obj.isLabeled;
                 obj.camPoints(:, nKPAnimator, :, f) = currentMarker;
             end
-            if obj.autosave
-                obj.saveState()
-            end
+%             if obj.autosave
+%                 obj.saveState()
+%             end
         end
         
         function keyPressCallback(obj,source,eventdata)
