@@ -80,6 +80,7 @@ classdef Label3D < Animator
     %              path = sprintf('%s%sCamera_%d.mat', obj.savePath,...
     %                       datestr(now,'yyyy_mm_dd_HH_MM_SS'), nCam);
     %   verbose - Print saving messages
+    %   monoColormap - Colormap for mono images. Default gray
     %
     %   Label3D Methods:
     %   Label3D - constructor
@@ -166,6 +167,7 @@ classdef Label3D < Animator
         pctScale=.2
         DragPointColor=[1 1 1];
         visibleDragPoints=true;
+        monoColormap='gray'
     end
     
     methods
@@ -245,7 +247,7 @@ classdef Label3D < Animator
             %               r - Rotation matrix
             %               t - Translation vector
             %   videos: Cell array of videos. Videos are assumed to be
-            %           undistorted and frame matched beforehand.
+            %           frame matched beforehand.
             %   skeleton: Structure with two fields:
             %       skeleton.color: nSegments x 3 matrix of RGB values
             %       skeleton.joints_idx: nSegments x 2 matrix of integers
@@ -290,6 +292,10 @@ classdef Label3D < Animator
                 ax.Toolbar.Visible = 'off';
                 set(ax,'XTick',[],'YTick',[]);
                 set(obj.h{nCam}.img,'ButtonDownFcn',@obj.clickImage);
+                isMono = (size(videos{nCam}, 3) == 1) || (len(size(videos{nCam})) == 3);
+                if isMono
+                   colormap(ax, obj.monoColormap)
+                end
             end
             
             % If there are initialized markers, save them in
