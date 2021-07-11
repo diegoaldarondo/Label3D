@@ -292,7 +292,7 @@ classdef Label3D < Animator
                 ax.Toolbar.Visible = 'off';
                 set(ax,'XTick',[],'YTick',[]);
                 set(obj.h{nCam}.img,'ButtonDownFcn',@obj.clickImage);
-                isMono = (size(videos{nCam}, 3) == 1) || (len(size(videos{nCam})) == 3);
+                isMono = (size(videos{nCam}, 3) == 1) || (length(size(videos{nCam})) == 3);
                 if isMono
                    colormap(ax, obj.monoColormap)
                 end
