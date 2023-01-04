@@ -805,7 +805,7 @@ classdef Label3D < Animator
                 obj.status(hasMoved, nKPAnimator, f) = obj.isLabeled;
                 obj.camPoints(:, nKPAnimator, :, f) = currentMarker;
                 
-                movedByHand = hasMoved & kpAnimator.dragged(obj.frameInds(obj.frame), :);
+                movedByHand = hasMoved & kpAnimator.dragged(obj.frameInds(obj.frame), :)';
                 obj.handLabeled2D(movedByHand, nKPAnimator, 1, f) = currentMarker(movedByHand, 1);
                 obj.handLabeled2D(movedByHand, nKPAnimator, 2, f) = currentMarker(movedByHand, 2);
             end
