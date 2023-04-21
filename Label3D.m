@@ -157,6 +157,8 @@ classdef Label3D < Animator
         savePath = ''
         kp3a
         statusAnimator
+        contactAnimator
+        contact_status
         h
         verbose = false
         undistortedImages = false
@@ -342,7 +344,10 @@ classdef Label3D < Animator
             % Set up a status table.
             obj.setUpStatusTable();
             
-            % Link all animators
+            % setup contact labels
+            obj.setupContactLabels()
+
+            % Link all animator
             Animator.linkAll(obj.getAnimators)
             
             % Set the GUI clicked callback to the custom toggle, so that we
@@ -401,7 +406,7 @@ classdef Label3D < Animator
         
         function animators = getAnimators(obj)
             %GETANIMATORS - return cell array of Animators
-            animators = [obj.h {obj} {obj.kp3a} {obj.statusAnimator}];
+            animators = [obj.h {obj} {obj.kp3a} {obj.statusAnimator} {obj.contactAnimator}];
         end
         
         function saveAll(obj)
@@ -705,7 +710,14 @@ classdef Label3D < Animator
             obj.checkStatus()
             obj.update()
         end
-        
+        function clickContact(obj, src, event)
+            pt = zeros(obj.nCams,2);
+            pt = obj.contactAnimator.img.Parent.CurrentPoint(1,1:2);
+            pt = event.IntersectionPoint(1:2);
+            pt = int32(round(pt));
+            obj.contact_status(pt(2), pt(1), obj.frameInds(obj.frame)) = ~obj.contact_status(pt(2), pt(1), obj.frameInds(obj.frame));
+            obj.update()
+        end
         function clickImage(obj, ~, ~)
             % Callback to image clicks (but not on nodes)
             % Pull out clicked point coordinate in image coordinates
@@ -766,7 +778,7 @@ classdef Label3D < Animator
             p = cell(obj.nCams,1);
             for i = 1:obj.nCams
                 p{i} = plotCamera('Orientation',obj.orientations{i},...
-                    'Location',obj.locations{i},'Size',50,...
+                    'Location',obj.locations{i},'Size',1,...
                     'Color',colors(i,:),'Label',sprintf('Camera %d',i));
                 hold on;
             end
@@ -1112,6 +1124,7 @@ classdef Label3D < Animator
             pts3D(~labeledFrames) = nan;
             data_3D = permute(pts3D, [3 2 1]);
             data_3D = reshape(data_3D, size(data_3D, 1), []);
+            contact_status = obj.contact_status;
             %             data_3D(~any(~isnan(data_3D),2),:) = [];
             %             pts3D(any(~any(~isnan(pts3D),2),3),:,:) = [];
             
@@ -1123,10 +1136,10 @@ classdef Label3D < Animator
                 framesToLabel = obj.framesToLabel;
                 save(path, 'data_3D', 'status',...
                     'skeleton', 'imageSize', 'handLabeled2D', 'cameraPoses','camParams',...
-                    'sync','framesToLabel')
+                    'sync','framesToLabel','contact_status')
             else
                 save(path, 'data_3D', 'status',...
-                    'skeleton', 'imageSize', 'handLabeled2D', 'cameraPoses','camParams')
+                    'skeleton', 'imageSize', 'handLabeled2D', 'cameraPoses','camParams','contact_status')
             end
         end
         
@@ -1442,6 +1455,7 @@ classdef Label3D < Animator
             
             % Update the status animator
             obj.updateStatusAnimator()
+            obj.updateContactAnimator()
         end
         
         function setUpKeypointTable(obj)
@@ -1474,6 +1488,26 @@ classdef Label3D < Animator
             end
             set(obj.statusAnimator.img,'CDataMapping','direct')
             obj.counter = title(sprintf('Total: %d',sum(any(summary==obj.isLabeled,1))));
+        end
+
+        function setupContactLabels(obj)
+            f = figure('Units','Normalized','pos', [0 0 .5 .7],...
+                'NumberTitle','off');
+            ax = gca;
+            colormap([0 0 0; 1 1 1])
+            obj.contact_status = zeros(6, 6, obj.nFrames);
+            obj.contactAnimator = VideoAnimator(obj.contact_status,'Axes', ax, 'clim', [0 1]);
+            set(obj.contactAnimator.img,'ButtonDownFcn',@obj.clickContact);
+            ax = obj.contactAnimator.Axes;
+            set(ax, 'YTick',1:6,'YTickLabels',{'Head','Forelimb R', 'Forelimb L', 'Hindlimb R', 'Hindlimb L', 'Body'})
+            set(ax, 'XTick',1:6,'XTickLabels',{'Head','Forelimb R', 'Forelimb L', 'Hindlimb R', 'Hindlimb L', 'Body'},'XTickLabelRotation',90)
+        end
+
+        function updateContactAnimator(obj)
+            obj.checkStatus();
+            contact_V = permute(obj.contact_status, [1 2 4 3]);
+            obj.contactAnimator.V = contact_V;
+            obj.contactAnimator.update()
         end
         
         function updateStatusAnimator(obj)
