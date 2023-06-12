@@ -128,6 +128,7 @@ classdef Label3D < Animator
             'h: help guide\n'];
         statusMsg = 'Label3D:\nFrame: %d\nframeRate: %d\n'
         hiddenAxesPos = [.99 .99 .01 .01]
+        contactParts = {'Head', 'Forelimb R', 'Forelimb L', 'Hindlimb R', 'Hindlimb L', 'Buttox', 'Body'}
         isLabeled = 2
         isInitialized = 1
         counter
@@ -1495,12 +1496,12 @@ classdef Label3D < Animator
                 'NumberTitle','off');
             ax = gca;
             colormap([0 0 0; 1 1 1])
-            obj.contact_status = zeros(6, 6, obj.nFrames);
+            obj.contact_status = zeros(length(obj.contactParts), length(obj.contactParts), obj.nFrames);
             obj.contactAnimator = VideoAnimator(obj.contact_status,'Axes', ax, 'clim', [0 1]);
             set(obj.contactAnimator.img,'ButtonDownFcn',@obj.clickContact);
             ax = obj.contactAnimator.Axes;
-            set(ax, 'YTick',1:6,'YTickLabels',{'Head','Forelimb R', 'Forelimb L', 'Hindlimb R', 'Hindlimb L', 'Body'})
-            set(ax, 'XTick',1:6,'XTickLabels',{'Head','Forelimb R', 'Forelimb L', 'Hindlimb R', 'Hindlimb L', 'Body'},'XTickLabelRotation',90)
+            set(ax, 'YTick',1:length(obj.contactParts),'YTickLabels',obj.contactParts)
+            set(ax, 'XTick',1:length(obj.contactParts),'XTickLabels',obj.contactParts,'XTickLabelRotation',90)
         end
 
         function updateContactAnimator(obj)
