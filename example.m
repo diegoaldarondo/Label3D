@@ -47,7 +47,7 @@ sync = cellfun(@(X) {load(X)}, sync);
 % In case the demo folder uses the dannce.mat data format. 
 if isempty(sync)
     dannce_file = dir(fullfile(projectFolder, '*dannce.mat'));
-    dannce = load(fullfile(dannce_file(1).folder, dannce_file(2).name));
+    dannce = load(fullfile(dannce_file(1).folder, dannce_file(1).name));
     sync = dannce.sync;
     params = dannce.params;
 end
