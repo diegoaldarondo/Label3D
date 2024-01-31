@@ -35,23 +35,29 @@ close all;
 addpath(genpath('deps'));
 addpath(genpath('skeletons'));
 
-%% Configuration variables -- SET THESE BEFORE RUNNING
 
+%% Configuration variables -- SET THESE BEFORE RUNNING
 % Path to the DANNCE project folder
 % This folder should contain at least the following folders: "videos", "calibration"
-projectFolder = 'path/to/dannce/project/folder';
+projectFolder = '~/olveczky/dannce_data/example_dannce_project_folder';
 % number of frames to label from each video. Suggested 100-200.
-nFramesToLabel = 100;
+nFramesToLabel = 10;
 
-%% Load in the calibration parameter data
+
+%% Locate file paths and set up environment
 calibrationPaths = collectCalibrationPaths(projectFolder, 'hires_cam*_params.mat');
 calibrationParams = cellfun(@(X) {load(X)}, calibrationPaths);
 
-%% Load the videos into memory
 videoName = '0.mp4';
 videoPaths = collectVideoPaths(projectFolder, videoName);
 
-%% Load video frames into memory
+% create label folder if does not exist
+labelingFolder = fullfile(projectFolder, "labeling");
+warnState = warning('off','MATLAB:MKDIR:DirectoryExists');
+mkdir(labelingFolder)
+warning(warnState)
+
+%% Load video frames into memory (slow)
 
 % load one video to determine video dimensions
 vr = VideoReader(videoPaths{1});
@@ -74,7 +80,7 @@ fprintf(['Reading video frames with the following parameters:\n'...
     '\tnumber of videos: %d\n'...
     '\twidth x height: (%d x %d)\n'...
     '\ttotal number of frames: %d\n'...
-    '\tframes to read per video: %d\n'],...
+    '\tframes to read per video: %d\n'], ...
     nVideos, videoWidth, videoHeight, nFramesWholeVideo, nFramesToLabel)
 
 fprintf("Estimated load time about %d sec\n\n", estimatedLoadTime)
@@ -83,6 +89,7 @@ videos = cell(nVideos, 1);
 
 tic;
 
+delete(gcp('nocreate')); % make sure no parallel pool is currently running
 parpool("Threads"); % create parallel pool for loading video frames
 % threads is much faster to load than processes
 
@@ -117,13 +124,14 @@ sEllapsed = toc;
 fprintf("Loaded %d frames in %.2f seconds (%.2f fps)\n\n", ...
     nTotalFrames, sEllapsed, nTotalFrames/sEllapsed);
 
-%% Get the skeleton
-skeleton = load('skeletons/com');
+%% Load the skeleton
+skeleton = load('skeletons/rat23.mat');
 
 %% Start Label3D
 close all;
 fprintf("Launching Label3D. May take a few seconds...\n")
-labelGui = Label3D(calibrationParams, videos, skeleton);
+labelGui = Label3D(calibrationParams, videos, skeleton, ...
+    'savePath', labelingFolder);
 
 %% Check the camera positions
 % labelGui.plotCameras       
