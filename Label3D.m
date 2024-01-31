@@ -144,6 +144,7 @@ classdef Label3D < Animator
         markers
         locations
         camPoints
+        handLabeled2D % store 2D hand-labeled points
         points3D
         status
         selectedNode
@@ -170,41 +171,41 @@ classdef Label3D < Animator
     
     methods
         function obj = Label3D(varargin)
-            %Label3D - constructor for Label3D class.
-            %
-            %Input format 1: Build from scratch
-            %   camParams: Cell array of structures denoting camera
-            %              parameters for each camera.
-            %           Structure has five fields:
-            %               K - Intrinsic Matrix
-            %               RDistort - Radial distortion
-            %               TDistort - Tangential distortion
-            %               r - Rotation matrix
-            %               t - Translation vector
-            %   videos: Cell array of h x w x c x nFrames videos.
-            %   skeleton: Structure with three fields:
-            %       skeleton.color: nSegments x 3 matrix of RGB values
-            %       skeleton.joints_idx: nSegments x 2 matrix of integers
-            %           denoting directed edges between markers.
-            %       skeleton.joint_names: cell array of names of each joint
-            %   Syntax: Label3D(camParams, videos, skeleton, varargin);
-            %
-            %Input format 2: Load from state
-            %   file: Path to saved Label3D state file (with or without
-            %   video)
-            %   videos: Cell array of h x w x c x nFrames videos.
-            %   Syntax: Label3D(file, videos, varargin);
-            %
-            %Input format 3: Load from file
-            %   file: Path to saved Label3D state file (with video)
-            %   Syntax: Label3D(file, varargin);
-            %
-            %Input format 4: Load and merge multiple files
-            %   file: cell array of paths to saved Label3D state files (with video)
-            %   Syntax: Label3D(file, varargin);
-            %
-            %Input format 5: Load GUI file selection
-            %   Syntax: Label3D(varargin);
+            % Label3D - constructor for Label3D class.
+            % 
+            % Input format 1: Build from scratch
+            %    camParams: Cell array of structures denoting camera
+            %               parameters for each camera.
+            %            Structure has five fields:
+            %                K - Intrinsic Matrix
+            %                RDistort - Radial distortion
+            %                TDistort - Tangential distortion
+            %                r - Rotation matrix
+            %                t - Translation vector
+            %    videos: Cell array of h x w x c x nFrames videos.
+            %    skeleton: Structure with three fields:
+            %        skeleton.color: nSegments x 3 matrix of RGB values
+            %        skeleton.joints_idx: nSegments x 2 matrix of integers
+            %            denoting directed edges between markers.
+            %        skeleton.joint_names: cell array of names of each joint
+            %    Syntax: Label3D(camParams, videos, skeleton, varargin);
+            % 
+            % Input format 2: Load from state
+            %    file: Path to saved Label3D state file (with or without
+            %    video)
+            %    videos: Cell array of h x w x c x nFrames videos.
+            %    Syntax: Label3D(file, videos, varargin);
+            % 
+            % Input format 3: Load from file
+            %    file: Path to saved Label3D state file (with video)
+            %    Syntax: Label3D(file, varargin);
+            % 
+            % Input format 4: Load and merge multiple files
+            %    file: cell array of paths to saved Label3D state files (with video)
+            %    Syntax: Label3D(file, varargin);
+            % 
+            % Input format 5: Load GUI file selection
+            %    Syntax: Label3D(varargin);
             
             % User defined inputs
             obj@Animator('Visible','off');
@@ -273,7 +274,8 @@ classdef Label3D < Animator
             % Set up the cameras
             obj.nCams = numel(obj.origCamParams);
             obj.h = cell(1);
-            obj.ImageSize = cellfun(@(x) [size(x,1); size(x,2)], videos, 'UniformOutput', false);
+            obj.ImageSize = cellfun(@(x) [size(x,1); size(x,2)], videos, ...
+                'UniformOutput', false);
             obj.ImageSize = [obj.ImageSize{:}]';
             [obj.cameraParams, obj.orientations, obj.locations] = ...
                 obj.loadcamParams(obj.origCamParams);
@@ -319,6 +321,7 @@ classdef Label3D < Animator
             % Initialize data and accounting matrices
             if ~isempty(obj.markers)
                 obj.camPoints = nan(obj.nMarkers,obj.nCams,2,obj.nFrames);
+                obj.handLabeled2D = nan(obj.nMarkers,obj.nCams,2,obj.nFrames);
             end
             obj.points3D = nan(obj.nMarkers, 3, obj.nFrames);
             obj.status = zeros(obj.nMarkers, obj.nCams, obj.nFrames);
@@ -415,6 +418,7 @@ classdef Label3D < Animator
             skeleton = obj.skeleton;
             status = obj.status;
             savePath = obj.savePath;
+            handLabeled2D = obj.handLabeled2D;
             
             % Since we don't store the videos in Label3D we need to extract
             % them from the VideoAnimators
@@ -439,9 +443,9 @@ classdef Label3D < Animator
             if ~isempty(obj.framesToLabel) && ~isempty(obj.sync)
                 sync = obj.sync;
                 framesToLabel = obj.framesToLabel;
-                save(path, 'videos','camParams','skeleton','data_3D','status','sync','framesToLabel','savePath', '-v7.3')
+                save(path, 'videos','camParams','handLabeled2D', 'skeleton','data_3D','status','sync','framesToLabel','savePath', '-v7.3')
             else
-                save(path, 'videos','camParams','skeleton','data_3D','status','savePath', '-v7.3')
+                save(path, 'videos','camParams','handLabeled2D', 'skeleton','data_3D','status','savePath', '-v7.3')
             end
         end
         
@@ -450,14 +454,14 @@ classdef Label3D < Animator
         %         end
         
         function [c, orientations, locations] = loadcamParams(obj, camParams)
-            %LOADCAMPARAMS - Helper to load in camera params into cameraParameters objects
-            % and save the world positions.
-            %
-            % Inputs: camParams - cell array of camera parameter structs
-            %
-            % Syntax: obj.loadcamParams(camParams)
-            %
-            %See also: GETCAMERAPOSES
+            % LOADCAMPARAMS - Helper to load in camera params into cameraParameters objects
+            %  and save the world positions.
+            % 
+            %  Inputs: camParams - cell array of camera parameter structs
+            % 
+            %  Syntax: obj.loadcamParams(camParams)
+            % 
+            % See also: GETCAMERAPOSES
             [c, orientations, locations] = deal(cell(obj.nCams, 1));
             for i = 1:numel(c)
                 % Get all parameters into cameraParameters object.
@@ -467,10 +471,12 @@ classdef Label3D < Animator
                 R = camParams{i}.r;
                 rotationVector = rotationMatrixToVector(R);
                 translationVector = camParams{i}.t;
-                c{i} = cameraParameters('IntrinsicMatrix',K,...
-                    'ImageSize',obj.ImageSize(i,:),'RadialDistortion',RDistort,...
-                    'TangentialDistortion',TDistort,...
-                    'RotationVectors',rotationVector,...
+                c{i} = cameraParameters( ...
+                    'IntrinsicMatrix',K, ...
+                    'ImageSize',obj.ImageSize(i,:), ...
+                    'RadialDistortion',RDistort, ...
+                    'TangentialDistortion',TDistort, ...
+                    'RotationVectors',rotationVector, ...
                     'TranslationVectors',translationVector);
                 
                 % Also save world location and orientation
@@ -613,6 +619,12 @@ classdef Label3D < Animator
                 obj.cameraPoses(cams,:), intrinsics(cams));
             % Save the results to the points3D matrix
             obj.points3D(joint, :, fr) = xyzPoints;
+
+            % Update the status of the draggable animator
+            for nKPAnimator = 1 : obj.nCams
+                kpAnimator = obj.h{obj.nCams + nKPAnimator};
+                kpAnimator.dragged(frame, jointIds) = false;
+            end
         end
         
         function xyzPoints = triangulateLabeledPoints(obj, frame)
@@ -727,6 +739,7 @@ classdef Label3D < Animator
             index = obj.selectedNode;
             obj.h{cam+obj.nCams}.points.XData(index) = pt(cam,1);
             obj.h{cam+obj.nCams}.points.YData(index) = pt(cam,2);
+            obj.h{cam+obj.nCams}.dragged(obj.frameInds(obj.frame), obj.selectedNode) = true;
             obj.h{cam+obj.nCams}.update();
             obj.checkStatus();
             obj.update();
@@ -794,6 +807,10 @@ classdef Label3D < Animator
                 end
                 obj.status(hasMoved, nKPAnimator, f) = obj.isLabeled;
                 obj.camPoints(:, nKPAnimator, :, f) = currentMarker;
+
+                movedByHand = hasMoved & kpAnimator.dragged(obj.frameInds(obj.frame), :)';
+                obj.handLabeled2D(movedByHand, nKPAnimator, 1, f) = currentMarker(movedByHand, 1);
+                obj.handLabeled2D(movedByHand, nKPAnimator, 2, f) = currentMarker(movedByHand, 2);
             end
 %             if obj.autosave
 %                 obj.saveState()
@@ -1058,6 +1075,7 @@ classdef Label3D < Animator
             data = load(file);
             % Load the points
             obj.loadFrom3D(data.data_3D)
+            obj.handLabeled2D = data.handLabeled2D;
             obj.status = data.status;
             if isfield(data, 'framesToLabel') && isfield(data, 'sync')
                 obj.sync = data.sync;
@@ -1070,6 +1088,7 @@ classdef Label3D < Animator
             % saveState - Save data for each camera to the savePath
             %   Saves one .mat file for each camera with the format string
             %   path = sprintf('%s%sCamera_%d.mat', obj.savePath, datestr(now,'yyyy_mm_dd_HH_MM_SS'), nCam);
+            %   NOTE: does not save video frames.
             %
             % Saved variables include:
             %   status - Logical denoting whether each keypoint has been
@@ -1102,15 +1121,16 @@ classdef Label3D < Animator
             
             camParams = obj.origCamParams;
             path = sprintf('%s.mat', obj.savePath);
+            handLabeled2D = obj.handLabeled2D;
             if ~isempty(obj.framesToLabel) && ~isempty(obj.sync)
                 sync = obj.sync;
                 framesToLabel = obj.framesToLabel;
                 save(path, 'data_3D', 'status',...
-                    'skeleton', 'imageSize', 'cameraPoses','camParams',...
+                    'skeleton', 'imageSize', 'handLabeled2D', 'cameraPoses','camParams',...
                     'sync','framesToLabel')
             else
                 save(path, 'data_3D', 'status',...
-                    'skeleton', 'imageSize', 'cameraPoses','camParams')
+                    'skeleton', 'imageSize', 'handLabeled2D', 'cameraPoses','camParams')
             end
         end
         
@@ -1237,7 +1257,7 @@ classdef Label3D < Animator
             end
             
             % Save the state and use the data for export
-            obj.saveState;
+            obj.saveState();
             p.file = obj.savePath;
             labels = load(p.file);
             
@@ -1282,11 +1302,13 @@ classdef Label3D < Animator
             outPath = fullfile(outDir, sprintf('%sLabel3D_dannce.mat', obj.sessionDatestr));
             params = obj.origCamParams;
             camnames = p.cameraNames;
+            handLabeled2D = obj.handLabeled2D;
+
             if ~isempty(obj.sync)
                 sync = obj.sync;
-                save(outPath,'labelData','params','sync','camnames')
+                save(outPath,'labelData','handLabeled2D', 'params','sync','camnames')
             else
-                save(outPath,'labelData','params','camnames')
+                save(outPath,'labelData','handLabeled2D', 'params','camnames')
             end
         end
     end
