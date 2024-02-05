@@ -4,7 +4,8 @@ archive
 viewResults.m
 .git
 deps/geom2d
-# Windows default autosave extension
+
+# Matlab default autosave extension
 *.asv
 
 # OSX / *nix default autosave extension
