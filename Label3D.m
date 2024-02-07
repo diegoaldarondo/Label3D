@@ -108,11 +108,11 @@ classdef Label3D < Animator
     %   Written by Diego Aldarondo (2019)
     %   Some code adapted from https://github.com/talmo/leap
     properties (Access = private)
-        color
-        joints
-        origNFrames
+        % color %UNUSED
+        % joints %UNUSED
+        origNFrames % original # of frames - why needed? does n-frames ever change?
         initialMarkers
-        isKP3Dplotted
+        isKP3Dplotted % track status of keypoints 3d plotted (for toggling)
         gridColor = [.7 .7 .7]
         mainFigureColor = [0.1412 0.1412 0.1412]
         labelPosition = [0 .3 .9 .5]
@@ -127,46 +127,46 @@ classdef Label3D < Animator
             'shift: set frame rate to 250\n' ...
             'h: help guide\n'];
         statusMsg = 'Label3D:\nFrame: %d\nframeRate: %d\n'
-        hiddenAxesPos = [.99 .99 .01 .01]
-        isLabeled = 2
-        isInitialized = 1
-        counter
-        sessionDatestr
+        hiddenAxesPos = [.99 .99 .01 .01] %used to relocate plots offscreen to hide them
+        isLabeled = 2 % enum in status matrix representing labeled (by hand or computed)
+        isInitialized = 1 % enum in status matrix representing initially provided points
+        counter % text object: total # of labeled frames
+        sessionDatestr % date string during load: used to set save file name
     end
     
     properties (Access = public)
-        autosave = true
-        clipboard
-        origCamParams
-        cameraParams
-        cameraPoses
-        orientations
-        markers
-        locations
-        camPoints
-        handLabeled2D % store 2D hand-labeled points
-        points3D
-        status
-        selectedNode
-        skeleton
-        ImageSize
-        nMarkers
-        nCams
-        jointsPanel
-        jointsControl
-        savePath = ''
-        kp3a
-        statusAnimator
-        h
-        verbose = false
-        undistortedImages = false
-        sync
-        framesToLabel
-        videoPositions
-        defScale
-        pctScale=.2
-        DragPointColor=[1 1 1];
-        visibleDragPoints=true;
+        autosave = true % if enabled: autosave after every triangulation (keyboard: "t" or "l"")
+        clipboard % object for handling copy & paste of labels
+        origCamParams % MAYBE UNNECESSARY? used to save original camera parameters to state file
+        cameraParams % cam param: intrinsics
+        orientations % cam param: rotation
+        locations % cam param: translation
+        cameraPoses % creates object from obj.orientations & obj.locations. variables: 'ViewId', 'Orientation', 'Location'
+        markers % UNUSED? might store initial markers. SHAPE: cell(#cams) of (#frames, 2, #markers). 
+        camPoints % 2D camera points for each frame. SHAPE: (#markers, #cams, 2, #frames)
+        handLabeled2D % 2D hand-labeled points only (subset of camPoints)
+        points3D % 3D points for frame. SHAPE: (#markers, 3, #frames)
+        status % status of each point in each frame. Unabled=0, initialized=1, labeled=2. SHAPE: (#markers, #cameras, #frames)
+        selectedNode % ID of selected joint in joint table (clicking will create joint of this ID)
+        skeleton % skeleton object: color, joints_idx, joint_names
+        ImageSize % HEIGHT, WIDTH of each camerea. SHAPE: (#cams, 2)
+        nMarkers % # of markers/joints (e.g. 23)
+        nCams % # of cameras (e.g. 6)
+        jointsPanel % "panel" for joints window
+        jointsControl % "uicontrol" object for joints window
+        savePath = '' % path to save _Label3D.mat state file. NOTE: if provided for "from scratch" constructor, savePath is folder name instead.
+        kp3a % "Keypoint3DAnimator" object -- TBD WHAT IT DOES
+        statusAnimator % animator for status heatmap window
+        h % cell of animators: {#cams (VideoAnimators) ... #cams (DraggableKeypoint2DAnimators)}
+        verbose = true % UNUSED? TBD REMOVE
+        undistortedImages = false % boolean. If true, treat images as undistorted (don't apply intrinsics)
+        sync %camera sync object
+        framesToLabel % frame #'s to label: [1 x nFrames] (optional)
+        videoPositions % x, y, width, height (origin=bottom left?) of videos. SHAPE: (#cams, 4)
+        defScale % global scale for images
+        pctScale=.2 % scale images by this fraction
+        DragPointColor=[1 1 1]; % passed to DraggableKeypoint2DAnimator constructor
+        visibleDragPoints=true; %p assed to DraggableKeypoint2DAnimator constructor
     end
     
     methods
@@ -294,8 +294,8 @@ classdef Label3D < Animator
                 set(obj.h{nCam}.img,'ButtonDownFcn',@obj.clickImage);
             end
             
-            % If there are initialized markers, save them in
-            % initialMarkers, otherwise just set the markers to nan.
+            % If there are no initialized markers, set the markers to nan.
+            % Othewise, save them in initialMarkers.
             if isempty(obj.markers)
                 obj.markers = cell(obj.nCams,1);
                 for i = 1:numel(obj.markers)
@@ -329,6 +329,7 @@ classdef Label3D < Animator
             % Make images rescalable
             cellfun(@(X) set(X.Axes,...
                 'DataAspectRatioMode', 'auto', 'Color', 'none'), obj.h)
+            % select first joint by default
             obj.selectedNode = 1;
             
             % Style the main Figure
