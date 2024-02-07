@@ -1,7 +1,7 @@
 function data = load_multi_gpu_data(filepath)
 %%
-files = dir(fullfile(filepath,'*AVG*.mat'));
-num = cellfun(@str2double, regexp({files.name},'\d*','Match'), 'uni', 0);
+files = dir(fullfile(filepath, '*AVG*.mat'));
+num = cellfun(@str2double, regexp({files.name}, '\d*', 'Match'), 'uni', 0);
 files(cellfun(@isempty, num)) = [];
 num = cell2mat(num(~cellfun(@isempty, num)));
 [~, I] = sort(num);
