@@ -624,7 +624,7 @@ classdef Label3D < Animator
             % Update the status of the draggable animator
             for nKPAnimator = 1 : obj.nCams
                 kpAnimator = obj.h{obj.nCams + nKPAnimator};
-                kpAnimator.dragged(frame, jointIds) = false;
+                kpAnimator.dragged(fr, jointIds) = false;
             end
         end
         
