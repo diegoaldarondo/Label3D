@@ -113,6 +113,7 @@ classdef Label3D < Animator
         origNFrames % original # of frames - why needed? does n-frames ever change?
         initialMarkers
         isKP3Dplotted % track status of keypoints 3d plotted (for toggling)
+        % NOTE: maybe we can just rely on kp3d.Visible == 1 instead?
         gridColor = [.7 .7 .7]
         mainFigureColor = [0.1412 0.1412 0.1412]
         labelPosition = [0 .3 .9 .5]
@@ -146,7 +147,7 @@ classdef Label3D < Animator
         camPoints % 2D camera points for each frame. SHAPE: (#markers, #cams, 2, #frames)
         handLabeled2D % 2D hand-labeled points only (subset of camPoints)
         points3D % 3D points for frame. SHAPE: (#markers, 3, #frames)
-        status % status of each point in each frame. Unabled=0, initialized=1, labeled=2. SHAPE: (#markers, #cameras, #frames)
+        status % status of each point in each frame. Unabled = 0, initialized = 1, labeled = 2. SHAPE: (#markers, #cameras, #frames)
         selectedNode % ID of selected joint in joint table (clicking will create joint of this ID)
         skeleton % skeleton object: color, joints_idx, joint_names
         ImageSize % HEIGHT, WIDTH of each camerea. SHAPE: (#cams, 2)
@@ -155,18 +156,24 @@ classdef Label3D < Animator
         jointsPanel % "panel" for joints window
         jointsControl % "uicontrol" object for joints window
         savePath = '' % path to save _Label3D.mat state file. NOTE: if provided for "from scratch" constructor, savePath is folder name instead.
-        kp3a % "Keypoint3DAnimator" object -- TBD WHAT IT DOES
+        kp3a % "Keypoint3DAnimator" object -- optionally rendered 3d plot of marker positions
         statusAnimator % animator for status heatmap window
         h % cell of animators: {#cams (VideoAnimators) ... #cams (DraggableKeypoint2DAnimators)}
         verbose = true % UNUSED? TBD REMOVE
-        undistortedImages = false % boolean. If true, treat images as undistorted (don't apply intrinsics)
+        undistortedImages = false % boolean. If true, treat images as undistorted (don't apply intrinsics to frame array)
         sync %camera sync object
         framesToLabel % frame #'s to label: [1 x nFrames] (optional)
-        videoPositions % x, y, width, height (origin=bottom left?) of videos. SHAPE: (#cams, 4)
+        videoPositions % x, y, width, height (origin = bottom left?) of videos. SHAPE: (#cams, 4)
         defScale % global scale for images
-        pctScale=.2 % scale images by this fraction
-        DragPointColor=[1 1 1]; % passed to DraggableKeypoint2DAnimator constructor
+        pctScale = .2 % scale images by this fraction
+        DragPointColor = [1 1 1]; % passed to DraggableKeypoint2DAnimator constructor
         visibleDragPoints=true; %p assed to DraggableKeypoint2DAnimator constructor
+        % ===========================
+        % Useful Inherited properties 
+        % ===========================
+        % parent: current figure (from `gcf`)
+        % frame: frame number of animation (NOT indexed by frameInds)
+        % frameInds: frame index mapping (usually f(x) = x, i.e. identity fn)
     end
     
     methods
@@ -333,7 +340,7 @@ classdef Label3D < Animator
             obj.selectedNode = 1;
             
             % Style the main Figure
-            addToolbarExplorationButtons(obj.Parent)
+            addToolbarExplorationButtons(obj.Parent) % note: this is also done in animator constructor
             set(obj.Parent, 'Units', 'Normalized', 'pos', obj.labelPosition, ...
                 'Name', 'Label3D GUI', 'NumberTitle', 'off', ...
                 'color', obj.mainFigureColor)
@@ -487,7 +494,7 @@ classdef Label3D < Animator
         end
         
         function cameraPoses = getCameraPoses(obj)
-            %GETCAMERAPOSES -  Helper function to store the camera poses 
+            %GETCAMERAPOSES - Helper function to store the camera poses 
             %for triangulation
             %
             %See also: LOADCAMPARAMS
@@ -819,9 +826,11 @@ classdef Label3D < Animator
         end
         
         function keyPressCallback(obj, source, eventdata)
-            obj.checkForClickedNodes
-            % keyPressCallback - Handle UI
+            % keyPressCallback - Handle UI on keypress
+            % bound to "WindowKeyPressFcn" event handler in Animator constructor
             % Extends Animator callback function
+            
+            obj.checkForClickedNodes()
             
             % Determine the key that was pressed and any modifiers
             keyPressed = eventdata.Key;
@@ -937,6 +946,10 @@ classdef Label3D < Animator
             end
             
             % Extend Animator callback function
+            % Base animator provides support for the following keys:
+            %   navigate frames: leftarrow, rightarrow
+            %   increase/decrease navigation speed: uparrow, downarrow
+            %   select "animator scope"?: number keys 1-9
             keyPressCallback@Animator(obj, source, eventdata);
         end
         
@@ -1146,6 +1159,7 @@ classdef Label3D < Animator
         end
         
         function remove3dPlot(obj)
+            % Hide the KeypointAnimator3D plot
             for nAnimator = 1:obj.nCams
                 pos = obj.videoPositions(nAnimator, :);
                 set(obj.h{nAnimator}, 'Position', pos)
@@ -1158,6 +1172,8 @@ classdef Label3D < Animator
         end
         
         function add3dPlot(obj)
+            % Show the KeypointAnimator3D plot
+
             % Move the other plots out of the way
             pos = obj.getPositions(obj.nCams + 1);
             for nAnimator = 1:obj.nCams
@@ -1316,6 +1332,8 @@ classdef Label3D < Animator
     
     methods (Access = private)
         function reset(obj)
+            % reset frameInds to 1:nFrames
+            % also set current frame number to 1
             restrict(obj, 1:obj.origNFrames)
         end
         
