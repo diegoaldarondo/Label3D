@@ -230,7 +230,7 @@ classdef Label3D < Animator
                 if (isstring(varargin{1}) || ischar(varargin{1})) && iscell(varargin{2})
                     file = varargin{1};
                     videos = varargin{2};
-                    varargin(1:2) = [];
+                    varargin(1 : 2) = [];
                     obj.loadFromState(file, videos, varargin{:})
                     return;
                 end
@@ -272,7 +272,7 @@ classdef Label3D < Animator
             obj.origCamParams = camParams;
             obj.nFrames = size(videos{1}, 4);
             obj.origNFrames = obj.nFrames;
-            obj.frameInds = 1:obj.nFrames;
+            obj.frameInds = 1 : obj.nFrames;
             obj.nMarkers = numel(obj.skeleton.joint_names);
             obj.sessionDatestr = datestr(now, 'yyyymmdd_HHMMss_');
             filename = [obj.sessionDatestr, 'Label3D'];
@@ -292,7 +292,7 @@ classdef Label3D < Animator
             if isempty(obj.videoPositions)
                 obj.videoPositions = obj.getPositions(obj.nCams);
             end
-            for nCam = 1:obj.nCams
+            for nCam = 1 : obj.nCams
                 pos = obj.videoPositions(nCam, :);
                 obj.h{nCam} = VideoAnimator(videos{nCam}, 'Position', pos);
                 ax = obj.h{nCam}.Axes;
@@ -305,7 +305,7 @@ classdef Label3D < Animator
             % Othewise, save them in initialMarkers.
             if isempty(obj.markers)
                 obj.markers = cell(obj.nCams, 1);
-                for i = 1:numel(obj.markers)
+                for i = 1 : numel(obj.markers)
                     obj.markers{i} = nan(obj.origNFrames, 2, obj.nMarkers);
                 end
             else
@@ -313,7 +313,7 @@ classdef Label3D < Animator
             end
             
             % Make the Draggable Keypoint Animators
-            for nCam = 1:obj.nCams
+            for nCam = 1 : obj.nCams
                 obj.h{obj.nCams + nCam} = ...
                     DraggableKeypoint2DAnimator(obj.markers{nCam}, ...
                     obj.skeleton, 'Axes', obj.h{nCam}.Axes, ...
@@ -364,7 +364,7 @@ classdef Label3D < Animator
             obj.setUpKeypointTable();
             
             % Limit the default interactivity to useful interactions
-            for nAx = 1:numel(obj.Parent.Children)
+            for nAx = 1 : numel(obj.Parent.Children)
                 ax = obj.Parent.Children(nAx);
                 disableDefaultInteractivity(ax);
                 ax.Interactions = [zoomInteraction regionZoomInteraction rulerPanInteraction];
@@ -399,7 +399,7 @@ classdef Label3D < Animator
             %Syntax: obj.getPositions(views, nRows)
             %
             %See also: POSITIONFROMNROWS
-            views = 1:nViews;
+            views = 1 : nViews;
             nRows = floor(sqrt(nViews));
             if nViews > 3
                 pos = obj.positionFromNRows(views, nRows);
@@ -433,7 +433,7 @@ classdef Label3D < Animator
             animators = obj.getAnimators();
             videos = cell(numel(obj.origCamParams), 1);
             nVid = 1;
-            for i = 1:numel(animators)
+            for i = 1 : numel(animators)
                 if isa(animators{i}, 'VideoAnimator')
                     videos{nVid} = animators{i}.V;
                 end
@@ -471,7 +471,7 @@ classdef Label3D < Animator
             % 
             % See also: GETCAMERAPOSES
             [c, orientations, locations] = deal(cell(obj.nCams, 1));
-            for i = 1:numel(c)
+            for i = 1 : numel(c)
                 % Get all parameters into cameraParameters object.
                 K = camParams{i}.K;
                 RDistort = camParams{i}.RDistort;
@@ -499,13 +499,13 @@ classdef Label3D < Animator
             %
             %See also: LOADCAMPARAMS
             varNames = {'ViewId', 'Orientation', 'Location'};
-            cameraPoses = [arr2cell(uint32((1:obj.nCams)))' ...
+            cameraPoses = [arr2cell(uint32((1 : obj.nCams)))' ...
                 obj.orientations obj.locations];
             
             % This fixes a silly conversion between cells and tables that
             % dereferences cells with dim 1 in the rows.
             cameraPoses = cell2struct(cameraPoses', varNames);
-            for i = 1:obj.nCams
+            for i = 1 : obj.nCams
                 cameraPoses(i).Location = {cameraPoses(i).Location};
             end
             cameraPoses = struct2table(cameraPoses);
@@ -515,7 +515,7 @@ classdef Label3D < Animator
             %ZOOMOUT - Zoom all images out to their maximum sizes.
             %
             %See also: TRIANGULATEVIEW
-            for i = 1:obj.nCams
+            for i = 1 : obj.nCams
                 xlim(obj.h{obj.nCams + i}.Axes, [1 obj.ImageSize(i, 2)])
                 ylim(obj.h{obj.nCams + i}.Axes, [1 obj.ImageSize(i, 1)])
             end
@@ -549,16 +549,16 @@ classdef Label3D < Animator
                 % Build a box in 3D to focus views
                 xyzEdges = [xyzPt - obj.defScale; xyzPt + obj.defScale];
                 xyzNodes = [];
-                for i = 1:2
-                    for j = 1:2
-                        for k = 1:2
+                for i = 1 : 2
+                    for j = 1 : 2
+                        for k = 1 : 2
                             xyzNodes(end+1, :) = [xyzEdges(i, 1), xyzEdges(j, 2), xyzEdges(k, 3)];
                         end
                     end
                 end
                 
                 % Change all of the axes to fit the box.
-                for nCam = 1:obj.nCams
+                for nCam = 1 : obj.nCams
                     camParam = obj.cameraParams{nCam};
                     rotation = obj.orientations{nCam}';
                     translation = camParam.TranslationVectors;
@@ -571,7 +571,7 @@ classdef Label3D < Animator
             else
                 % Change all of the axes to surround the mean point with a
                 % window defined as a percentage of the image dimensions.
-                for nCam = 1:obj.nCams
+                for nCam = 1 : obj.nCams
                     camParam = obj.cameraParams{nCam};
                     rotation = obj.orientations{nCam}';
                     translation = camParam.TranslationVectors;
@@ -645,7 +645,7 @@ classdef Label3D < Animator
             
             % For each labeled joint, triangulate with the right cameras
             xyzPoints = zeros(numel(jointIds), 3);
-            for nJoint = 1:numel(jointIds)
+            for nJoint = 1 : numel(jointIds)
                 cams = camIds(nJoint, :);
                 joint = jointIds(nJoint);
                 pointTracks = obj.getPointTrack(frame, joint, cams);
@@ -663,7 +663,7 @@ classdef Label3D < Animator
             
             % Reproject the world coordinates for the labeled joints to
             % each camera and store in the camPoints
-            for nCam = 1:obj.nCams
+            for nCam = 1 : obj.nCams
                 camParam = obj.cameraParams{nCam};
                 rotation = obj.orientations{nCam}';
                 translation = camParam.TranslationVectors;
@@ -684,13 +684,13 @@ classdef Label3D < Animator
         
         function resetFrame(obj)
             % Reset current frame to the initial unlabeled positions.
-            for i = 1:obj.nCams
+            for i = 1 : obj.nCams
                 obj.h{obj.nCams + i}.resetFrame();
             end
             f = obj.frameInds(obj.frame);
             obj.status(:, :, f) = 0;
             if ~isempty(obj.initialMarkers)
-                for nAnimator = 1:obj.nCams
+                for nAnimator = 1 : obj.nCams
                     obj.initialMarkers{nAnimator}(f, :, :) = nan;
                 end
             end
@@ -700,10 +700,10 @@ classdef Label3D < Animator
         
         function resetMarker(obj)
             % Delete the selected nodes if they exist
-            draggableAnimators = obj.h(obj.nCams+1:2*obj.nCams);
+            draggableAnimators = obj.h(obj.nCams+1 : 2*obj.nCams);
             fr = obj.frameInds(obj.frame);
             markerInd = obj.selectedNode;
-            for nAnimator = 1:numel(draggableAnimators)
+            for nAnimator = 1 : numel(draggableAnimators)
                 obj.status(markerInd, nAnimator, fr) = 0;
                 keyObj = draggableAnimators{nAnimator};
                 keyObj.markers(fr, :, markerInd) = nan;
@@ -721,14 +721,14 @@ classdef Label3D < Animator
             % Callback to image clicks (but not on nodes)
             % Pull out clicked point coordinate in image coordinates
             pt = zeros(obj.nCams, 2);
-            for i = 1:obj.nCams
-                pt(i, :) = obj.h{i}.img.Parent.CurrentPoint(1, 1:2);
+            for i = 1 : obj.nCams
+                pt(i, :) = obj.h{i}.img.Parent.CurrentPoint(1, 1 : 2);
             end
             
             % Pull out clicked point in figure coordinates.
             fpt = obj.Parent.CurrentPoint;
             [goodX, goodY] = deal(zeros(obj.nCams, 1));
-            for nCam = 1:obj.nCams
+            for nCam = 1 : obj.nCams
                 pos = obj.h{nCam}.Position;
                 goodX(nCam) = pos(1) <= fpt(1) && fpt(1) < (pos(1) + pos(3));
                 goodY(nCam) = pos(2) <= fpt(2) && fpt(2) < (pos(2) + pos(4));
@@ -761,7 +761,7 @@ classdef Label3D < Animator
             
             % Undistort the points if needed
             if ~obj.undistortedImages
-                for nCam = 1:numel(viewIds)
+                for nCam = 1 : numel(viewIds)
                     params = obj.cameraParams{viewIds(nCam)};
                     imPts(nCam, :) = undistortPoints(imPts(nCam, :), params);
                 end
@@ -775,7 +775,7 @@ classdef Label3D < Animator
             ax = axes(f);
             colors = lines(obj.nCams);
             p = cell(obj.nCams, 1);
-            for i = 1:obj.nCams
+            for i = 1 : obj.nCams
                 p{i} = plotCamera('Orientation', obj.orientations{i}, ...
                     'Location', obj.locations{i}, 'Size', 50, ...
                     'Color', colors(i, :), 'Label', sprintf('Camera %d', i));
@@ -793,7 +793,7 @@ classdef Label3D < Animator
             % Update the movement status for the current frame, if
             % necessary
             f = obj.frameInds(obj.frame);
-            for nKPAnimator = 1:obj.nCams
+            for nKPAnimator = 1 : obj.nCams
                 kpAnimator = obj.h{obj.nCams+nKPAnimator};
                 currentMarker = kpAnimator.getCurrentFramePositions();
 
@@ -855,8 +855,8 @@ classdef Label3D < Animator
                     % Check if a node is held for any of the draggable
                     % keypoint animators.
                     nodeIsHeld = false;
-                    draggableAnimators = obj.h(obj.nCams+1:2*obj.nCams);
-                    for nAnimator = 1:numel(draggableAnimators)
+                    draggableAnimators = obj.h(obj.nCams + 1 : 2 * obj.nCams);
+                    for nAnimator = 1 : numel(draggableAnimators)
                         if ~isnan(draggableAnimators{nAnimator}.selectedNode)
                             ani = draggableAnimators{nAnimator};
                             camInFocus = nAnimator;
@@ -954,12 +954,12 @@ classdef Label3D < Animator
         end
         
         function resetAspectRatio(obj)
-            % aspect ratio of all images is set to 1:1
-            for i = 1:obj.nCams
+            % aspect ratio of all images is set to 1 : 1
+            for i = 1 : obj.nCams
                 thisAx = obj.h{i}.Axes;
                 xLim = thisAx.XLim;
                 yLim = thisAx.YLim;
-                mRange = range(xLim)/2 + range(yLim)/2;
+                mRange = range(xLim) / 2 + range(yLim) / 2;
                 newRange = [-mRange/2, mRange/2];
                 thisAx.XLim = mean(thisAx.XLim) + newRange;
                 thisAx.YLim = mean(thisAx.YLim) + newRange;
@@ -980,7 +980,7 @@ classdef Label3D < Animator
                 error('Frame must be an integer.')
             end
             animators = obj.getAnimators();
-            for i = 1:numel(animators)
+            for i = 1 : numel(animators)
                 animators{i}.frame = newFrame;
             end
             set(obj.Axes.Parent, 'NumberTitle', 'off', ...
@@ -993,6 +993,7 @@ classdef Label3D < Animator
         end
         
         function toggleUiState(obj, state)
+            % toggle Zoom & Pan UI States
             if strcmp(state.Enable, 'off')
                 % Toggle the zoom state
                 state.Enable = 'on';
@@ -1007,7 +1008,10 @@ classdef Label3D < Animator
                 % We need to disable normal keypress mode
                 % functionality to prevent the command window from
                 % taking focus
+
+                % WindowKeyPressFcn: executed regardless of which component has focus: global execution
                 obj.Parent.WindowKeyPressFcn = @(src, event) Animator.runAll(obj.getAnimators, src, event);
+                % KeyPressFcn: executes only if the component has focus
                 obj.Parent.KeyPressFcn = [];
             else
                 state.Enable = 'off';
@@ -1051,10 +1055,10 @@ classdef Label3D < Animator
             
             
             % Reproject the camera points
-            for nFrame = 1:size(obj.points3D, 3)
+            for nFrame = 1 : size(obj.points3D, 3)
                 obj.reprojectPoints(nFrame);
             end
-            for nAnimator = 1:obj.nCams
+            for nAnimator = 1 : obj.nCams
                 impts = zeros(size(obj.camPoints, 1), size(obj.camPoints, 3), size(obj.camPoints, 4));
                 impts(:) = obj.camPoints(:, nAnimator, :, :);
                 obj.initialMarkers{nAnimator} = permute(impts, [3 2 1]);
@@ -1160,7 +1164,7 @@ classdef Label3D < Animator
         
         function remove3dPlot(obj)
             % Hide the KeypointAnimator3D plot
-            for nAnimator = 1:obj.nCams
+            for nAnimator = 1 : obj.nCams
                 pos = obj.videoPositions(nAnimator, :);
                 set(obj.h{nAnimator}, 'Position', pos)
                 set(obj.h{nAnimator+obj.nCams}, 'Position', pos)
@@ -1176,7 +1180,7 @@ classdef Label3D < Animator
 
             % Move the other plots out of the way
             pos = obj.getPositions(obj.nCams + 1);
-            for nAnimator = 1:obj.nCams
+            for nAnimator = 1 : obj.nCams
                 set(obj.h{nAnimator}, 'Position', pos(nAnimator, :))
                 set(obj.h{nAnimator+obj.nCams}, 'Position', pos(nAnimator, :))
             end
@@ -1193,8 +1197,8 @@ classdef Label3D < Animator
         
         function checkForClickedNodes(obj)
             % Delete the selected nodes if they exist
-            draggableAnimators = obj.h(obj.nCams+1:2*obj.nCams);
-            for nAnimator = 1:numel(draggableAnimators)
+            draggableAnimators = obj.h(obj.nCams+1 : 2*obj.nCams);
+            for nAnimator = 1 : numel(draggableAnimators)
                 if ~isnan(draggableAnimators{nAnimator}.selectedNode)
                     obj.selectedNode = draggableAnimators{nAnimator}.selectedNode;
                 end
@@ -1205,9 +1209,9 @@ classdef Label3D < Animator
         
         function deleteSelectedNode(obj)
             % Delete the selected nodes if they exist
-            draggableAnimators = obj.h(obj.nCams+1:2*obj.nCams);
+            draggableAnimators = obj.h(obj.nCams + 1 : 2 * obj.nCams);
             fr = obj.frameInds(obj.frame);
-            for nAnimator = 1:numel(draggableAnimators)
+            for nAnimator = 1 : numel(draggableAnimators)
                 if ~isnan(draggableAnimators{nAnimator}.selectedNode)
                     obj.status(draggableAnimators{nAnimator}.selectedNode, nAnimator, fr) = 0;
                     draggableAnimators{nAnimator}.deleteSelectedNode
@@ -1234,7 +1238,7 @@ classdef Label3D < Animator
             %         labelGui.exportDannce('saveFolder', saveFolder)
             defaultBasePath = '';
             defaultCameraNames = cell(1, obj.nCams);
-            for i = 1:numel(defaultCameraNames)
+            for i = 1 : numel(defaultCameraNames)
                 defaultCameraNames{i} = sprintf('Camera%d', i);
             end
             defaultFramesToLabel = obj.framesToLabel;
@@ -1282,7 +1286,7 @@ classdef Label3D < Animator
             % For each labels file, extract the labeled points and save metadata.
             nCameras = numel(obj.sync);
             labelData = cell(nCameras, 1);
-            for nCam = 1:nCameras
+            for nCam = 1 : nCameras
                 % Find corresponding sampleIds
                 labeled = zeros(size(labels.status, 1), size(labels.status, 3));
                 labeled(:) = ~any(labels.status ~= obj.isLabeled, 2);
@@ -1332,9 +1336,9 @@ classdef Label3D < Animator
     
     methods (Access = private)
         function reset(obj)
-            % reset frameInds to 1:nFrames
+            % reset frameInds to 1 : nFrames
             % also set current frame number to 1
-            restrict(obj, 1:obj.origNFrames)
+            restrict(obj, 1 : obj.origNFrames)
         end
         
         function setupKeypoint3dAnimator(obj)
@@ -1367,11 +1371,11 @@ classdef Label3D < Animator
             
             tempVideos = cellfun(@(X) load(X, 'videos'), files);
             videos = cell(numel(tempVideos(1).videos), 1);
-            for nCam = 1:numel(tempVideos(1).videos)
+            for nCam = 1 : numel(tempVideos(1).videos)
                 vids = arrayfun(@(X) X.videos{nCam}, tempVideos, 'UniformOutput', false);
                 videos{nCam} = cat(4, vids{:});
                 vids = [];
-                for nFile = 1:numel(tempVideos)
+                for nFile = 1 : numel(tempVideos)
                     tempVideos(nFile).videos{nCam} = [];
                 end
             end
@@ -1436,7 +1440,7 @@ classdef Label3D < Animator
     methods (Access = protected)
         function update(obj)
             % Update all of the other animators with any new data.
-            for nKPAnimator = 1:obj.nCams
+            for nKPAnimator = 1 : obj.nCams
                 kpaId = obj.nCams+nKPAnimator;
                 kps = zeros(obj.nMarkers, size(obj.camPoints, 3), size(obj.camPoints, 4));
                 kps(:) = obj.camPoints(:, nKPAnimator, :, :);
@@ -1452,8 +1456,8 @@ classdef Label3D < Animator
             end
             
             % Run all of the update functions.
-            for nAnimator = 1:numel(obj.h)
-                update(obj.h{nAnimator})
+            for nAnimator = 1 : numel(obj.h)
+                obj.h{nAnimator}.update()
             end
             
             % Update the keypoint animator
