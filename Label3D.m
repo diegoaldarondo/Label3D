@@ -114,10 +114,10 @@ classdef Label3D < Animator
         initialMarkers
         isKP3Dplotted % track status of keypoints 3d plotted (for toggling)
         % NOTE: maybe we can just rely on kp3d.Visible == 1 instead?
-        gridColor = [.7 .7 .7]
-        mainFigureColor = [0.1412 0.1412 0.1412]
-        labelPosition = [0 .3 .9 .5]
-        tablePosition = [.9 .3 .1 .5]
+        gridColor = [0.7, 0.7, 0.7]
+        mainFigureColor = [0.1412, 0.1412, 0.1412]
+        labelPosition = [0, 0.3, 0.9, 0.5]
+        tablePosition = [0.9, 0.3, 0.1, 0.5]
         instructions = ['Label3D Guide:\n'...
             'rightarrow: next frame\n' ...
             'leftarrow: previous frame\n' ...
@@ -128,7 +128,7 @@ classdef Label3D < Animator
             'shift: set frame rate to 250\n' ...
             'h: help guide\n'];
         statusMsg = 'Label3D:\nFrame: %d\nframeRate: %d\n'
-        hiddenAxesPos = [.99 .99 .01 .01] %used to relocate plots offscreen to hide them
+        hiddenAxesPos = [0.99, 0.99, 0.01, 0.01] %used to relocate plots offscreen to hide them
         isLabeled = 2 % enum in status matrix representing labeled (by hand or computed)
         isInitialized = 1 % enum in status matrix representing initially provided points
         counter % text object: total # of labeled frames
@@ -165,9 +165,9 @@ classdef Label3D < Animator
         framesToLabel % frame #'s to label: [1 x nFrames] (optional)
         videoPositions % x, y, width, height (origin = bottom left?) of videos. SHAPE: (#cams, 4)
         defScale % global scale for images
-        pctScale = .2 % scale images by this fraction
-        DragPointColor = [1 1 1]; % passed to DraggableKeypoint2DAnimator constructor
-        visibleDragPoints=true; %p assed to DraggableKeypoint2DAnimator constructor
+        pctScale = 0.2 % scale images by this fraction
+        DragPointColor = [1, 1, 1]; % passed to DraggableKeypoint2DAnimator constructor
+        visibleDragPoints = true; %p assed to DraggableKeypoint2DAnimator constructor
         % ===========================
         % Useful Inherited properties
         % ===========================
@@ -367,7 +367,7 @@ classdef Label3D < Animator
             for nAx = 1 : numel(obj.Parent.Children)
                 ax = obj.Parent.Children(nAx);
                 disableDefaultInteractivity(ax);
-                ax.Interactions = [zoomInteraction regionZoomInteraction rulerPanInteraction];
+                ax.Interactions = [zoomInteraction, regionZoomInteraction, rulerPanInteraction];
             end
         end
         
@@ -382,12 +382,12 @@ classdef Label3D < Animator
             %
             %See also: GETPOSITIONS
             nViews = numel(views);
-            len = ceil(nViews/nRows);
+            len = ceil(nViews / nRows);
             pos = zeros(numel(views), 4);
-            pos(:, 1) = rem(views-1, len)/len;
-            pos(:, 2) = (1 - 1/nRows) - 1/nRows*(floor((views-1) / len));
-            pos(:, 3) = 1/len;
-            pos(:, 4) = 1/nRows;
+            pos(:, 1) = rem(views - 1, len) / len;
+            pos(:, 2) = (1 - 1 / nRows) - 1 / nRows * (floor((views - 1) / len));
+            pos(:, 3) = 1 / len;
+            pos(:, 4) = 1 / nRows;
         end
         
         function pos = getPositions(obj, nViews)
@@ -410,7 +410,7 @@ classdef Label3D < Animator
         
         function animators = getAnimators(obj)
             %GETANIMATORS - return cell array of Animators
-            animators = [obj.h {obj} {obj.kp3a} {obj.statusAnimator}];
+            animators = [obj.h, {obj}, {obj.kp3a}, {obj.statusAnimator}];
         end
         
         function saveAll(obj)
@@ -446,7 +446,7 @@ classdef Label3D < Animator
             labeledFrames = repelem(labeledFrames, 1, 3, 1);
             pts3D = obj.points3D;
             pts3D(~labeledFrames) = nan;
-            data_3D = permute(pts3D, [3 2 1]);
+            data_3D = permute(pts3D, [3, 2, 1]);
             data_3D = reshape(data_3D, size(data_3D, 1), []);
             if ~isempty(obj.framesToLabel) && ~isempty(obj.sync)
                 sync = obj.sync;
@@ -489,7 +489,7 @@ classdef Label3D < Animator
                 
                 % Also save world location and orientation
                 orientations{i} = R';
-                locations{i} = -translationVector*orientations{i};
+                locations{i} = -translationVector * orientations{i};
             end
         end
         
@@ -552,7 +552,7 @@ classdef Label3D < Animator
                 for i = 1 : 2
                     for j = 1 : 2
                         for k = 1 : 2
-                            xyzNodes(end+1, :) = [xyzEdges(i, 1), xyzEdges(j, 2), xyzEdges(k, 3)];
+                            xyzNodes(end + 1, :) = [xyzEdges(i, 1), xyzEdges(j, 2), xyzEdges(k, 3)];
                         end
                     end
                 end
@@ -577,8 +577,8 @@ classdef Label3D < Animator
                     translation = camParam.TranslationVectors;
                     pt = worldToImage(camParam, rotation, translation, xyzPt);
                     ax = obj.h{nCam}.Axes;
-                    xPad = obj.pctScale*camParam.Intrinsics.ImageSize(1);
-                    yPad = obj.pctScale*camParam.Intrinsics.ImageSize(2);
+                    xPad = obj.pctScale * camParam.Intrinsics.ImageSize(1);
+                    yPad = obj.pctScale * camParam.Intrinsics.ImageSize(2);
                     ax.XLim = [pt(1) - xPad, pt(1) + xPad];
                     ax.YLim = [pt(2) - yPad, pt(2) + yPad];
                 end
@@ -619,7 +619,7 @@ classdef Label3D < Animator
                 return;
             end
             pointTracks.ViewIds = [pointTracks.ViewIds repelem(cam1, 1, nReps)];
-            pointTracks.Points = cat(1, points, repmat(points(cams==cam1, :), nReps, 1));
+            pointTracks.Points = cat(1, points, repmat(points(cams == cam1, :), nReps, 1));
             cams = [cams repelem(cam1, 1, nReps)];
             
             % Do the weighted regression.
@@ -700,7 +700,7 @@ classdef Label3D < Animator
         
         function resetMarker(obj)
             % Delete the selected nodes if they exist
-            draggableAnimators = obj.h(obj.nCams+1 : 2*obj.nCams);
+            draggableAnimators = obj.h(obj.nCams + 1 : 2 * obj.nCams);
             fr = obj.frameInds(obj.frame);
             markerInd = obj.selectedNode;
             for nAnimator = 1 : numel(draggableAnimators)
@@ -744,11 +744,11 @@ classdef Label3D < Animator
             end
             
             % Update the currently selected node
-            index = obj.selectedNode;
-            obj.h{cam+obj.nCams}.points.XData(index) = pt(cam, 1);
-            obj.h{cam+obj.nCams}.points.YData(index) = pt(cam, 2);
-            obj.h{cam+obj.nCams}.dragged(obj.frameInds(obj.frame), obj.selectedNode) = true;
-            obj.h{cam+obj.nCams}.update();
+            selectedNodeIndex = obj.selectedNode;
+            obj.h{cam + obj.nCams}.points.XData(selectedNodeIndex) = pt(cam, 1);
+            obj.h{cam + obj.nCams}.points.YData(selectedNodeIndex) = pt(cam, 2);
+            obj.h{cam + obj.nCams}.dragged(obj.frameInds(obj.frame), obj.selectedNode) = true;
+            obj.h{cam + obj.nCams}.update();
             obj.checkStatus();
             obj.update();
         end
@@ -783,7 +783,7 @@ classdef Label3D < Animator
             end
             grid on
             axis equal;
-            daspect(ax, [1 1 1]);
+            daspect(ax, [1, 1, 1]);
             xlabel('X')
             ylabel('Y')
             zlabel('Z')
@@ -794,7 +794,7 @@ classdef Label3D < Animator
             % necessary
             f = obj.frameInds(obj.frame);
             for nKPAnimator = 1 : obj.nCams
-                kpAnimator = obj.h{obj.nCams+nKPAnimator};
+                kpAnimator = obj.h{obj.nCams + nKPAnimator};
                 currentMarkerCoords = kpAnimator.getCurrentFramePositions();
                 
                 % If there were initializations, use those, otherwise
@@ -806,7 +806,7 @@ classdef Label3D < Animator
                 else
                     cM = currentMarkerCoords;
                     iM = zeros(size(cM));
-                    iM(:) = permute(obj.initialMarkers{nKPAnimator}(f, :, :), [1 3 2]);
+                    iM(:) = permute(obj.initialMarkers{nKPAnimator}(f, :, :), [1, 3, 2]);
                     isDeleted = any(isnan(cM), 2);
                     iM(isnan(iM)) = 0;
                     cM(isnan(cM)) = 0;
@@ -884,9 +884,9 @@ classdef Label3D < Animator
                     end
                 case 'tab'
                     if wasShiftPressed
-                        obj.selectNode(obj.selectedNode-1)
+                        obj.selectNode(obj.selectedNode - 1)
                     else
-                        obj.selectNode(obj.selectedNode+1)
+                        obj.selectNode(obj.selectedNode + 1)
                     end
                 case 'u'
                     obj.resetFrame();
@@ -960,7 +960,7 @@ classdef Label3D < Animator
                 xLim = thisAx.XLim;
                 yLim = thisAx.YLim;
                 mRange = range(xLim) / 2 + range(yLim) / 2;
-                newRange = [-mRange/2, mRange/2];
+                newRange = [-mRange / 2, mRange / 2];
                 thisAx.XLim = mean(thisAx.XLim) + newRange;
                 thisAx.YLim = mean(thisAx.YLim) + newRange;
             end
@@ -1041,14 +1041,14 @@ classdef Label3D < Animator
             
             % Load the 3d points
             pts3d = reshape(pts3d, size(pts3d, 1), 3, []);
-            pts3d = permute(pts3d, [3 2 1]);
+            pts3d = permute(pts3d, [3, 2, 1]);
             if size(pts3d, 3) ~= obj.nFrames
                 error('3d points do not have the same number of frames as Label3D instance')
             end
             
             % Update the status. Only overwrite non-labeled points
             isInit = ~any(isnan(pts3d), 2);
-            newStatus = repelem(isInit, 1, obj.nCams, 1)*obj.isInitialized;
+            newStatus = repelem(isInit, 1, obj.nCams, 1) * obj.isInitialized;
             handLabeled = obj.status == obj.isLabeled;
             obj.status(~handLabeled) = newStatus(~handLabeled);
             ptsHandLabeled = repelem(any(handLabeled, 2), 1, 3, 1);
@@ -1062,7 +1062,7 @@ classdef Label3D < Animator
             for nAnimator = 1 : obj.nCams
                 impts = zeros(size(obj.camPoints, 1), size(obj.camPoints, 3), size(obj.camPoints, 4));
                 impts(:) = obj.camPoints(:, nAnimator, :, :);
-                obj.initialMarkers{nAnimator} = permute(impts, [3 2 1]);
+                obj.initialMarkers{nAnimator} = permute(impts, [3, 2, 1]);
             end
             obj.update()
             %             obj.points3D = nan(size(obj.points3D));
@@ -1133,7 +1133,7 @@ classdef Label3D < Animator
             labeledFrames = repelem(labeledFrames, 1, 3, 1);
             pts3D = obj.points3D;
             pts3D(~labeledFrames) = nan;
-            data_3D = permute(pts3D, [3 2 1]);
+            data_3D = permute(pts3D, [3, 2, 1]);
             data_3D = reshape(data_3D, size(data_3D, 1), []);
             %             data_3D(~any(~isnan(data_3D), 2), :) = [];
             %             pts3D(any(~any(~isnan(pts3D), 2), 3), :, :) = [];
@@ -1168,7 +1168,7 @@ classdef Label3D < Animator
             for nAnimator = 1 : obj.nCams
                 pos = obj.videoPositions(nAnimator, :);
                 set(obj.h{nAnimator}, 'Position', pos)
-                set(obj.h{nAnimator+obj.nCams}, 'Position', pos)
+                set(obj.h{nAnimator + obj.nCams}, 'Position', pos)
             end
             set(obj.kp3a.Axes, 'Position', obj.hiddenAxesPos);
             set(obj.kp3a.Axes, 'Visible', 'off')
@@ -1183,13 +1183,13 @@ classdef Label3D < Animator
             pos = obj.getPositions(obj.nCams + 1);
             for nAnimator = 1 : obj.nCams
                 set(obj.h{nAnimator}, 'Position', pos(nAnimator, :))
-                set(obj.h{nAnimator+obj.nCams}, 'Position', pos(nAnimator, :))
+                set(obj.h{nAnimator + obj.nCams}, 'Position', pos(nAnimator, :))
             end
             
             % Add the 3d plot in the right place
-            pad = .1*1/(obj.nCams+1);
-            pos = pos(end, :) + [pad pad -2*pad -2*pad];
-            lims = [-400 400];
+            pad = 0.1 * 1 / (obj.nCams + 1);
+            pos = pos(end, :) + [pad, pad, -2*pad, -2*pad];
+            lims = [-400, 400];
             set(obj.kp3a.Axes, 'Position', pos, 'Visible', 'on', ...
                 'XLim', lims, 'YLim', lims, 'ZLim', lims)
             arrayfun(@(X) set(X, 'Visible', 'on'), obj.kp3a.PlotSegments);
@@ -1300,7 +1300,7 @@ classdef Label3D < Animator
                 cp = obj.cameraParams{nCam};
                 % Reproject points from 3D to 2D, applying distortion if
                 % desired.
-                pts = permute(obj.points3D, [3 1 2]);
+                pts = permute(obj.points3D, [3, 1, 2]);
                 allpts = reshape(pts, [], 3);
                 if ~obj.undistortedImages
                     data_2D = worldToImage(cp, cp.RotationMatrices, ...
@@ -1310,7 +1310,7 @@ classdef Label3D < Animator
                         cp.TranslationVectors, allpts);
                 end
                 data_2D = reshape(data_2D, size(pts, 1), [], 2);
-                data_2D = permute(data_2D, [1 3 2]);
+                data_2D = permute(data_2D, [1, 3, 2]);
                 data_2D = reshape(data_2D, size(pts, 1), []);
                 
                 % Save out the set of labeled images.
@@ -1343,7 +1343,7 @@ classdef Label3D < Animator
         end
         
         function setupKeypoint3dAnimator(obj)
-            m = permute(obj.points3D, [3 2 1]);
+            m = permute(obj.points3D, [3, 2, 1]);
             % This hack prevents overlap between zoom callbacks in the kp
             % animator and the VideoAnimators
             pos = obj.hiddenAxesPos;
@@ -1445,7 +1445,7 @@ classdef Label3D < Animator
                 kpaId = obj.nCams + nKPAnimator;
                 kps = zeros(obj.nMarkers, size(obj.camPoints, 3), size(obj.camPoints, 4));
                 kps(:) = obj.camPoints(:, nKPAnimator, :, :);
-                kps = permute(kps, [3 2 1]);
+                kps = permute(kps, [3, 2, 1]);
                 
                 obj.h{kpaId}.markers = kps;
                 obj.h{kpaId}.markersX(:) = kps(:, 1, :);
@@ -1462,7 +1462,7 @@ classdef Label3D < Animator
             end
             
             % Update the keypoint animator data for all frames
-            pts = permute(obj.points3D, [3 2 1]);
+            pts = permute(obj.points3D, [3, 2, 1]);
             obj.kp3a.markers = pts;
             obj.kp3a.markersX = pts(:, 1, :);
             obj.kp3a.markersY = pts(:, 2, :);
@@ -1478,31 +1478,33 @@ classdef Label3D < Animator
                 'NumberTitle', 'off', 'ToolBar', 'none', 'MenuBar', 'none');
             obj.jointsPanel = uix.Panel('Parent', f, 'Title', 'Joints', ...
                 'Padding', 5, 'Units', 'Normalized');
-            obj.jointsControl = uicontrol(obj.jointsPanel, 'Style', ...
-                'listbox', 'String', obj.skeleton.joint_names, ...
-                'Units', 'Normalized', 'Callback', @(h, ~, ~) obj.selectNode(h.Value));
+            obj.jointsControl = uicontrol(obj.jointsPanel, ...
+                'Style', 'listbox', ...
+                'String', obj.skeleton.joint_names, ...
+                'Units', 'Normalized', ... 
+                'Callback', @(uiObj, ~, ~) obj.selectNode(uiObj.Value)); % handle clicks on the Joints Control UI
             set(obj.Parent.Children(end), 'Visible', 'off')
         end
         
         function setUpStatusTable(obj)
-            f = figure('Units', 'Normalized', 'pos', [0 0 .5 .3], ...
+            f = figure('Units', 'Normalized', 'pos', [0, 0, 0.5, 0.3], ...
                 'NumberTitle', 'off', 'ToolBar', 'none');
             ax = gca;
-            colormap([0 0 0;.5 .5 .5;1 1 1])
+            colormap([0, 0, 0; 0.5, 0.5, 0.5; 1, 1, 1])
             summary = zeros(size(obj.status, 1), size(obj.status, 3));
             summary(:) = mode(obj.status, 2);
             obj.statusAnimator = HeatMapAnimator(summary', 'Axes', ax);
             obj.statusAnimator.c.Visible = 'off';
             ax = obj.statusAnimator.Axes;
-            set(ax, 'YTick', 1:obj.nMarkers, 'YTickLabels', obj.skeleton.joint_names)
+            set(ax, 'YTick', 1 : obj.nMarkers, 'YTickLabels', obj.skeleton.joint_names)
             yyaxis(ax, 'right')
             if obj.nMarkers == 1
-                set(ax, 'YLim', [.5 1.5], 'YTick', 1, 'YTickLabels', sum(summary, 2))
+                set(ax, 'YLim', [0.5, 1.5], 'YTick', 1, 'YTickLabels', sum(summary, 2))
             else
-                set(ax, 'YLim', [1 obj.nMarkers], 'YTick', 1:obj.nMarkers, 'YTickLabels', sum(summary, 2))
+                set(ax, 'YLim', [1, obj.nMarkers], 'YTick', 1:obj.nMarkers, 'YTickLabels', sum(summary, 2))
             end
             set(obj.statusAnimator.img, 'CDataMapping', 'direct')
-            obj.counter = title(sprintf('Total: %d', sum(any(summary==obj.isLabeled, 1))));
+            obj.counter = title(sprintf('Total: %d', sum(any(summary == obj.isLabeled, 1))));
             f.set('MenuBar','none');
         end
         
@@ -1510,10 +1512,10 @@ classdef Label3D < Animator
             obj.checkStatus();
             summary = zeros(size(obj.status, 1), size(obj.status, 3));
             summary(:) = mode(obj.status, 2);
-            obj.statusAnimator.img.CData = summary+1;
+            obj.statusAnimator.img.CData = summary + 1;
             yyaxis(obj.statusAnimator.Axes, 'right')
-            set(obj.statusAnimator.Axes, 'YTickLabels', flip(sum(summary==obj.isLabeled, 2)))
-            obj.counter.String = sprintf('Total: %d', sum(any(summary==obj.isLabeled, 1)));
+            set(obj.statusAnimator.Axes, 'YTickLabels', flip(sum(summary == obj.isLabeled, 2)))
+            obj.counter.String = sprintf('Total: %d', sum(any(summary == obj.isLabeled, 1)));
             obj.statusAnimator.update()
         end
     end
