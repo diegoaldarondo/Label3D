@@ -795,15 +795,16 @@ classdef Label3D < Animator
             f = obj.frameInds(obj.frame);
             for nKPAnimator = 1 : obj.nCams
                 kpAnimator = obj.h{obj.nCams+nKPAnimator};
-                currentMarker = kpAnimator.getCurrentFramePositions();
+                currentMarkerCoords = kpAnimator.getCurrentFramePositions();
 
                 % If there were initializations, use those, otherwise
                 % just check for non-nans.
                 if isempty(obj.initialMarkers)
-                    hasMoved = any(~isnan(currentMarker), 2);
+                    % 23x1 logical array = 1 if marker is not default position
+                    hasMoved = any(~isnan(currentMarkerCoords), 2);
                     obj.status(~hasMoved, nKPAnimator, f) = 0;
                 else
-                    cM = currentMarker;
+                    cM = currentMarkerCoords;
                     iM = zeros(size(cM));
                     iM(:) = permute(obj.initialMarkers{nKPAnimator}(f, :, :), [1 3 2]);
                     isDeleted = any(isnan(cM), 2);
@@ -814,15 +815,12 @@ classdef Label3D < Animator
                     obj.status(isDeleted, nKPAnimator, f) = 0;
                 end
                 obj.status(hasMoved, nKPAnimator, f) = obj.isLabeled;
-                obj.camPoints(:, nKPAnimator, :, f) = currentMarker;
+                obj.camPoints(:, nKPAnimator, :, f) = currentMarkerCoords;
 
-                movedByHand = hasMoved & kpAnimator.dragged(obj.frameInds(obj.frame), :)';
-                obj.handLabeled2D(movedByHand, nKPAnimator, 1, f) = currentMarker(movedByHand, 1);
-                obj.handLabeled2D(movedByHand, nKPAnimator, 2, f) = currentMarker(movedByHand, 2);
+                movedByHand = hasMoved & kpAnimator.dragged(f, :)';
+                obj.handLabeled2D(movedByHand, nKPAnimator, 1, f) = currentMarkerCoords(movedByHand, 1);
+                obj.handLabeled2D(movedByHand, nKPAnimator, 2, f) = currentMarkerCoords(movedByHand, 2);
             end
-%             if obj.autosave
-%                 obj.saveState()
-%             end
         end
         
         function keyPressCallback(obj, source, eventdata)
@@ -830,6 +828,8 @@ classdef Label3D < Animator
             % bound to "WindowKeyPressFcn" event handler in Animator constructor
             % Extends Animator callback function
             
+            % update label3d selectedNode if any draggable animators have selected nodes
+            % also run checkStatus() & update() functions
             obj.checkForClickedNodes()
             
             % Determine the key that was pressed and any modifiers
@@ -857,11 +857,11 @@ classdef Label3D < Animator
                     nodeIsHeld = false;
                     draggableAnimators = obj.h(obj.nCams + 1 : 2 * obj.nCams);
                     for nAnimator = 1 : numel(draggableAnimators)
-                        if ~isnan(draggableAnimators{nAnimator}.selectedNode)
-                            ani = draggableAnimators{nAnimator};
+                        curAnimator = draggableAnimators{nAnimator};
+                        if ~isnan(curAnimator.selectedNode)
                             camInFocus = nAnimator;
-                            marker = ani.selectedNode;
-                            position = ani.selectedNodePosition;
+                            marker = curAnimator.selectedNode;
+                            position = curAnimator.selectedNodePosition;
                             nodeIsHeld = true;
                         end
                     end
@@ -988,6 +988,7 @@ classdef Label3D < Animator
         end
         
         function setLabeled(obj)
+            % set the entire frame's status as labeled
             obj.status(:, :, obj.frameInds(obj.frame)) = obj.isLabeled;
             obj.update()
         end
@@ -1196,8 +1197,8 @@ classdef Label3D < Animator
         end
         
         function checkForClickedNodes(obj)
-            % Delete the selected nodes if they exist
-            draggableAnimators = obj.h(obj.nCams+1 : 2*obj.nCams);
+            % update label3d selectedNode if any of the DraggableAnimators have a selectedNode
+            draggableAnimators = obj.h(obj.nCams + 1 : 2 * obj.nCams);
             for nAnimator = 1 : numel(draggableAnimators)
                 if ~isnan(draggableAnimators{nAnimator}.selectedNode)
                     obj.selectedNode = draggableAnimators{nAnimator}.selectedNode;
@@ -1441,7 +1442,7 @@ classdef Label3D < Animator
         function update(obj)
             % Update all of the other animators with any new data.
             for nKPAnimator = 1 : obj.nCams
-                kpaId = obj.nCams+nKPAnimator;
+                kpaId = obj.nCams + nKPAnimator;
                 kps = zeros(obj.nMarkers, size(obj.camPoints, 3), size(obj.camPoints, 4));
                 kps(:) = obj.camPoints(:, nKPAnimator, :, :);
                 kps = permute(kps, [3 2 1]);
@@ -1460,7 +1461,7 @@ classdef Label3D < Animator
                 obj.h{nAnimator}.update()
             end
             
-            % Update the keypoint animator
+            % Update the keypoint animator data for all frames
             pts = permute(obj.points3D, [3 2 1]);
             obj.kp3a.markers = pts;
             obj.kp3a.markersX = pts(:, 1, :);
