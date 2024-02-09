@@ -40,8 +40,16 @@ addpath(genpath('skeletons'));
 % Path to the DANNCE project folder
 % This folder should contain at least the following folders: "videos", "calibration"
 projectFolder = '~/olveczky/dannce_data/example_dannce_project_folder';
+
 % number of frames to label from each video. Suggested 100-200.
 nFramesToLabel = 10;
+
+% skeleton file to load (expected in ./skeletons directory)
+skeletonFile = 'rat23.mat' ;
+
+% Recommended: keep this enabled UNLESS you do not have matlab licesnse for 
+% the Parallel Processing Toolbox. Speeds up loading frames ~2x if enabled.
+useParallel = true;
 
 
 %% Locate file paths and set up environment
@@ -53,9 +61,12 @@ videoPaths = collectVideoPaths(projectFolder, videoName);
 
 % create label folder if does not exist
 labelingFolder = fullfile(projectFolder, "labeling");
-warnState = warning('off','MATLAB:MKDIR:DirectoryExists');
+warnState = warning('off', 'MATLAB:MKDIR:DirectoryExists');
 mkdir(labelingFolder)
 warning(warnState)
+
+% Load the skeleton
+skeleton = load(fullfile('skeletons', skeletonFile));
 
 %% Load video frames into memory (slow)
 
@@ -89,9 +100,11 @@ videos = cell(nVideos, 1);
 
 tic;
 
-delete(gcp('nocreate')); % make sure no parallel pool is currently running
-parpool("Threads"); % create parallel pool for loading video frames
-% threads is much faster to load than processes
+if useParallel
+    delete(gcp('nocreate')); % make sure no parallel pool is currently running
+    parpool("Threads"); % create parallel pool for loading video frames
+    % threads is much faster to start up than processes
+end
 
 parfor videoIdx = 1 : nVideos
     fprintf("Started video #%d\n", videoIdx);
@@ -117,15 +130,15 @@ parfor videoIdx = 1 : nVideos
     fprintf("Finished video #%d\n", videoIdx);
 end
 
-delete(gcp('nocreate')); % release parallel resources
+if useParallel
+    delete(gcp('nocreate')); % release parallel resources
+end
 
 sEllapsed = toc;
 
 fprintf("Loaded %d frames in %.2f seconds (%.2f fps)\n\n", ...
     nTotalFrames, sEllapsed, nTotalFrames/sEllapsed);
 
-%% Load the skeleton
-skeleton = load('skeletons/rat23.mat');
 
 %% Start Label3D
 close all;
