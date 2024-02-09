@@ -143,7 +143,7 @@ classdef Label3D < Animator
         orientations % cam param: rotation
         locations % cam param: translation
         cameraPoses % creates object from obj.orientations & obj.locations. variables: 'ViewId', 'Orientation', 'Location'
-        markers % UNUSED? might store initial markers. SHAPE: cell(#cams) of (#frames, 2, #markers). 
+        markers % UNUSED? might store initial markers. SHAPE: cell(#cams) of (#frames, 2, #markers).
         camPoints % 2D camera points for each frame. SHAPE: (#markers, #cams, 2, #frames)
         handLabeled2D % 2D hand-labeled points only (subset of camPoints)
         points3D % 3D points for frame. SHAPE: (#markers, 3, #frames)
@@ -169,7 +169,7 @@ classdef Label3D < Animator
         DragPointColor = [1 1 1]; % passed to DraggableKeypoint2DAnimator constructor
         visibleDragPoints=true; %p assed to DraggableKeypoint2DAnimator constructor
         % ===========================
-        % Useful Inherited properties 
+        % Useful Inherited properties
         % ===========================
         % parent: current figure (from `gcf`)
         % frame: frame number of animation (NOT indexed by frameInds)
@@ -179,7 +179,7 @@ classdef Label3D < Animator
     methods
         function obj = Label3D(varargin)
             % Label3D - constructor for Label3D class.
-            % 
+            %
             % Input format 1: Build from scratch
             %    camParams: Cell array of structures denoting camera
             %               parameters for each camera.
@@ -196,21 +196,21 @@ classdef Label3D < Animator
             %            denoting directed edges between markers.
             %        skeleton.joint_names: cell array of names of each joint
             %    Syntax: Label3D(camParams, videos, skeleton, varargin);
-            % 
+            %
             % Input format 2: Load from state
             %    file: Path to saved Label3D state file (with or without
             %    video)
             %    videos: Cell array of h x w x c x nFrames videos.
             %    Syntax: Label3D(file, videos, varargin);
-            % 
+            %
             % Input format 3: Load from file
             %    file: Path to saved Label3D state file (with video)
             %    Syntax: Label3D(file, varargin);
-            % 
+            %
             % Input format 4: Load and merge multiple files
             %    file: cell array of paths to saved Label3D state files (with video)
             %    Syntax: Label3D(file, varargin);
-            % 
+            %
             % Input format 5: Load GUI file selection
             %    Syntax: Label3D(varargin);
             
@@ -464,11 +464,11 @@ classdef Label3D < Animator
         function [c, orientations, locations] = loadcamParams(obj, camParams)
             % LOADCAMPARAMS - Helper to load in camera params into cameraParameters objects
             %  and save the world positions.
-            % 
+            %
             %  Inputs: camParams - cell array of camera parameter structs
-            % 
+            %
             %  Syntax: obj.loadcamParams(camParams)
-            % 
+            %
             % See also: GETCAMERAPOSES
             [c, orientations, locations] = deal(cell(obj.nCams, 1));
             for i = 1 : numel(c)
@@ -494,7 +494,7 @@ classdef Label3D < Animator
         end
         
         function cameraPoses = getCameraPoses(obj)
-            %GETCAMERAPOSES - Helper function to store the camera poses 
+            %GETCAMERAPOSES - Helper function to store the camera poses
             %for triangulation
             %
             %See also: LOADCAMPARAMS
@@ -523,12 +523,12 @@ classdef Label3D < Animator
         
         function triangulateView(obj)
             %TRIANGULATEVIEW - Triangulate labeled points and zoom all
-            %images around those points. 
+            %images around those points.
             %
             %Syntax: obj.triangulateView()
             %
             %See also: ZOOMOUT
-           
+            
             % Make sure there is at least one triangulated point
             frame = obj.frame;
             meanPts = squeeze(nanmean(obj.camPoints(:, :, :, frame), 1));
@@ -627,7 +627,7 @@ classdef Label3D < Animator
                 obj.cameraPoses(cams, :), intrinsics(cams));
             % Save the results to the points3D matrix
             obj.points3D(joint, :, fr) = xyzPoints;
-
+            
             % Update the status of the draggable animator
             for nKPAnimator = 1 : obj.nCams
                 kpAnimator = obj.h{obj.nCams + nKPAnimator};
@@ -796,7 +796,7 @@ classdef Label3D < Animator
             for nKPAnimator = 1 : obj.nCams
                 kpAnimator = obj.h{obj.nCams+nKPAnimator};
                 currentMarkerCoords = kpAnimator.getCurrentFramePositions();
-
+                
                 % If there were initializations, use those, otherwise
                 % just check for non-nans.
                 if isempty(obj.initialMarkers)
@@ -816,7 +816,7 @@ classdef Label3D < Animator
                 end
                 obj.status(hasMoved, nKPAnimator, f) = obj.isLabeled;
                 obj.camPoints(:, nKPAnimator, :, f) = currentMarkerCoords;
-
+                
                 movedByHand = hasMoved & kpAnimator.dragged(f, :)';
                 obj.handLabeled2D(movedByHand, nKPAnimator, 1, f) = currentMarkerCoords(movedByHand, 1);
                 obj.handLabeled2D(movedByHand, nKPAnimator, 2, f) = currentMarkerCoords(movedByHand, 2);
@@ -928,7 +928,7 @@ classdef Label3D < Animator
                     newFrame = inputdlg('Enter frame number:');
                     newFrame = str2double(newFrame);
                     if isnumeric(newFrame) && ~isempty(newFrame) && ~isnan(newFrame)
-                       obj.setFrame(newFrame) 
+                        obj.setFrame(newFrame)
                     end
                 case 'p'
                     if ~obj.isKP3Dplotted
@@ -1009,7 +1009,7 @@ classdef Label3D < Animator
                 % We need to disable normal keypress mode
                 % functionality to prevent the command window from
                 % taking focus
-
+                
                 % WindowKeyPressFcn: executed regardless of which component has focus: global execution
                 obj.Parent.WindowKeyPressFcn = @(src, event) Animator.runAll(obj.getAnimators, src, event);
                 % KeyPressFcn: executes only if the component has focus
@@ -1178,7 +1178,7 @@ classdef Label3D < Animator
         
         function add3dPlot(obj)
             % Show the KeypointAnimator3D plot
-
+            
             % Move the other plots out of the way
             pos = obj.getPositions(obj.nCams + 1);
             for nAnimator = 1 : obj.nCams
@@ -1252,13 +1252,13 @@ classdef Label3D < Animator
             addParameter(p, 'cameraNames', defaultCameraNames, validCameraNames);
             addParameter(p, 'framesToLabel', defaultFramesToLabel, validFrames);
             addParameter(p, 'saveFolder', defaultSaveFolder, validBasePath);
-           
+            
             parse(p, varargin{:});
             p = p.Results;
             if isempty(p.framesToLabel)
                 error('exportDannce:FrameNumbersMustBeProvided', [ ...
-                    'Frame numbers for each frame in videos must be provided.\n' ... 
-                    'framesToLabel - Vector of frame numbers for each video frame.\n' ... 
+                    'Frame numbers for each frame in videos must be provided.\n' ...
+                    'framesToLabel - Vector of frame numbers for each video frame.\n' ...
                     'labelGui.exportDannce(''''framesToLabel'''', framesToLabel)'])
             end
             
@@ -1325,7 +1325,7 @@ classdef Label3D < Animator
             params = obj.origCamParams;
             camnames = p.cameraNames;
             handLabeled2D = obj.handLabeled2D;
-
+            
             if ~isempty(obj.sync)
                 sync = obj.sync;
                 save(outPath, 'labelData', 'handLabeled2D', 'params', 'sync', 'camnames')

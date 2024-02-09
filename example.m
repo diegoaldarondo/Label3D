@@ -1,6 +1,6 @@
 %% Example setup for Label3D
 % Label3D is a GUI for manual labeling of 3D keypoints in multiple cameras.
-% 
+%
 % Its main features include:
 % 1. Simultaneous viewing of any number of camera views.
 % 2. Multiview triangulation of 3D keypoints.
@@ -8,7 +8,7 @@
 % 4. Zooming, panning, and other default Matlab gestures
 % 5. Integration with Animator classes.
 % 6. Support for editing prelabeled data.
-% 
+%
 % Instructions:
 % right: move forward one frameRate
 % left: move backward one frameRate
@@ -97,9 +97,9 @@ parfor videoIdx = 1 : nVideos
     fprintf("Started video #%d\n", videoIdx);
     thisPath = videoPaths{videoIdx};
     vr = VideoReader(thisPath);
-
+    
     dest = zeros(videoHeight, videoWidth, 3, nFramesToLabel, 'uint8');
-
+    
     % Iterate over all framesToLabel
     for frameIdx = 1 : nFramesToLabel
         frameNumber = framesToLabel(frameIdx);
@@ -109,11 +109,11 @@ parfor videoIdx = 1 : nVideos
         if mod(frameIdx, 20) == 0
             fprintf("\tloaded frame #%d of %d. Vid #%d of %d.\n", ...
                 frameIdx, nFramesToLabel, videoIdx, nVideos );
-        end  
+        end
     end
-
+    
     videos{videoIdx} = dest;
-
+    
     fprintf("Finished video #%d\n", videoIdx);
 end
 
@@ -134,7 +134,7 @@ labelGui = Label3D(calibrationParams, videos, skeleton, ...
     'savePath', labelingFolder);
 
 %% Check the camera positions
-% labelGui.plotCameras       
+% labelGui.plotCameras
 
 %% If you just wish to view labels, use View 3D
 % close all
