@@ -1475,7 +1475,7 @@ classdef Label3D < Animator
         
         function setUpKeypointTable(obj)
             f = figure('Units', 'Normalized', 'pos', obj.tablePosition, 'Name', 'Keypoint table', ...
-                'NumberTitle', 'off');
+                'NumberTitle', 'off', 'ToolBar', 'none', 'MenuBar', 'none');
             obj.jointsPanel = uix.Panel('Parent', f, 'Title', 'Joints', ...
                 'Padding', 5, 'Units', 'Normalized');
             obj.jointsControl = uicontrol(obj.jointsPanel, 'Style', ...
@@ -1486,7 +1486,7 @@ classdef Label3D < Animator
         
         function setUpStatusTable(obj)
             f = figure('Units', 'Normalized', 'pos', [0 0 .5 .3], ...
-                'NumberTitle', 'off');
+                'NumberTitle', 'off', 'ToolBar', 'none');
             ax = gca;
             colormap([0 0 0;.5 .5 .5;1 1 1])
             summary = zeros(size(obj.status, 1), size(obj.status, 3));
@@ -1503,6 +1503,7 @@ classdef Label3D < Animator
             end
             set(obj.statusAnimator.img, 'CDataMapping', 'direct')
             obj.counter = title(sprintf('Total: %d', sum(any(summary==obj.isLabeled, 1))));
+            f.set('MenuBar','none');
         end
         
         function updateStatusAnimator(obj)
