@@ -1,112 +1,112 @@
 classdef Label3D < Animator
-    %Label3D - Label3D is a GUI for manual labeling of 3D keypoints in multiple cameras.
-    %
-    %Input format 1: Build from scratch
-    %   camParams: Cell array of structures denoting camera
-    %              parameters for each camera.
-    %           Structure has five fields:
-    %               K - Intrinsic Matrix
-    %               RDistort - Radial distortion
-    %               TDistort - Tangential distortion
-    %               r - Rotation matrix
-    %               t - Translation vector
-    %   videos: Cell array of h x w x c x nFrames videos.
-    %   skeleton: Structure with three fields:
-    %       skeleton.color: nSegments x 3 matrix of RGB values
-    %       skeleton.joints_idx: nSegments x 2 matrix of integers
-    %           denoting directed edges between markers.
-    %       skeleton.joint_names: cell array of names of each joint
-    %   Syntax: Label3D(camParams, videos, skeleton, varargin);
-    %
-    %Input format 2: Load from state
-    %   file: Path to saved Label3D state file (with or without
-    %   video)
-    %   videos: Cell array of h x w x c x nFrames videos.
-    %   Syntax: Label3D(file, videos, varargin);
-    %
-    %Input format 3: Load from file
-    %   file: Path to saved Label3D state file (with video)
-    %   Syntax: Label3D(file, varargin);
-    %
-    %Input format 4: Load and merge multiple files
-    %   file: cell array of paths to saved Label3D state files (with video)
-    %   Syntax: Label3D(file, varargin);
-    %
-    %Input format 5: Load GUI file selection
-    %   Syntax: Label3D(varargin);
-    %
-    % Instructions:
-    % right: move forward one frameRate
-    % left: move backward one frameRate
-    % up: increase the frameRate
-    % down: decrease the frameRate
-    % t: triangulate points in current frame that have been labeled in at least two images and reproject into each image
-    % r: reset gui to the first frame and remove Animator restrictions
-    % u: reset the current frame to the initial marker positions
-    % z: Toggle zoom state
-    % p: Show 3d animation plot of the triangulated points.
-    % backspace: reset currently held node (first click and hold, then
-    %            backspace to delete)
-    % pageup: Set the selectedNode to the first node
-    % tab: shift the selected node by 1
-    % shift+tab: shift the selected node by -1
-    % h: print help messages for all Animators
-    % shift+s: Save the data to a .mat file
-    %
-    %   Label3D Properties:
-    %   cameraParams - Camera Parameters for all cameras
-    %   cameraPoses - Camera poses for all cameras
-    %   orientations - Orientations of all cameras
-    %   locations - Locations of all cameras
-    %   camPoints - Positions of all points in camera coordinates
-    %   points3D - Positions of all points in world XYZ coordinates
-    %   status - Logical matrix denoting whether a node has been modified
-    %   selectedNode - Currently selected node for click updating
-    %   skeleton - Struct denoting directed graph
-    %   ImageSize - Size of the images
-    %   nMarkers - Number of markers
-    %   nCams - Number of Cameras
-    %   jointsPanel - Handle to keypoint panel
-    %   jointsControl - Handle to keypoint controller
-    %   savePath - Path in which to save data.
-    %   h - Cell array of Animator handles.
-    %   frameInds - Indices of current subset of frames
-    %   frame - Current frame number within subset
-    %   frameRate - current frame rate
-    %   undistortedImages - If true, treat input images as undistorted
-    %                       (Default false)
-    %   savePath - Path in which to save output. The output files are of
-    %              the form
-    %              path = sprintf('%s%sCamera_%d.mat', obj.savePath, ...
-    %                       datestr(now, 'yyyy_mm_dd_HH_MM_SS'), nCam);
-    %   verbose - Print saving messages
-    %
-    %   Label3D Methods:
-    %   Label3D - constructor
-    %   loadcamParams - Load in camera parameters
-    %   getCameraPoses - Return table of camera poses
-    %   zoomOut - Zoom all images out to full size
-    %   getLabeledJoints - Return the indices of labeled joints and
-    %       corresponding cameras in a frame.
-    %   triangulateLabeledPoints - Return xyz positions of labeled joints.
-    %   reprojectPoints - reproject points from world coordinates to the
-    %       camera reference frames
-    %   resetFrame - reset all labels to the initial positions within a
-    %       frame.
-    %   clickImage - Assign the position of the selected node with the
-    %       position of a mouse click.
-    %   getPointTrack - Helper function to return pointTrack object for
-    %       current frame.
-    %   plotCameras - Plot the positions and orientations of all cameras in
-    %       world coordinates.
-    %   checkStatus - Check whether points have been moved and update
-    %       accordingly
-    %   keyPressCallback - handle UI
-    %   saveState - save the current labeled data to a mat file.
-    %   selectNode - Modify the current selected node.
-    %
-    %   Written by Diego Aldarondo (2019)
-    %   Some code adapted from https://github.com/talmo/leap
+    % Label3D - Label3D is a GUI for manual labeling of 3D keypoints in multiple cameras.
+    % 
+    % Input format 1: Build from scratch
+    %    camParams: Cell array of structures denoting camera
+    %               parameters for each camera.
+    %            Structure has five fields:
+    %                K - Intrinsic Matrix
+    %                RDistort - Radial distortion
+    %                TDistort - Tangential distortion
+    %                r - Rotation matrix
+    %                t - Translation vector
+    %    videos: Cell array of h x w x c x nFrames videos.
+    %    skeleton: Structure with three fields:
+    %        skeleton.color: nSegments x 3 matrix of RGB values
+    %        skeleton.joints_idx: nSegments x 2 matrix of integers
+    %            denoting directed edges between markers.
+    %        skeleton.joint_names: cell array of names of each joint
+    %    Syntax: Label3D(camParams, videos, skeleton, varargin);
+    % 
+    % Input format 2: Load from state
+    %    file: Path to saved Label3D state file (with or without
+    %    video)
+    %    videos: Cell array of h x w x c x nFrames videos.
+    %    Syntax: Label3D(file, videos, varargin);
+    % 
+    % Input format 3: Load from file
+    %    file: Path to saved Label3D state file (with video)
+    %    Syntax: Label3D(file, varargin);
+    % 
+    % Input format 4: Load and merge multiple files
+    %    file: cell array of paths to saved Label3D state files (with video)
+    %    Syntax: Label3D(file, varargin);
+    % 
+    % Input format 5: Load GUI file selection
+    %    Syntax: Label3D(varargin);
+    % 
+    %  Instructions:
+    %  right: move forward one frameRate
+    %  left: move backward one frameRate
+    %  up: increase the frameRate
+    %  down: decrease the frameRate
+    %  t: triangulate points in current frame that have been labeled in at least two images and reproject into each image
+    %  r: reset gui to the first frame and remove Animator restrictions
+    %  u: reset the current frame to the initial marker positions
+    %  z: Toggle zoom state
+    %  p: Show 3d animation plot of the triangulated points.
+    %  backspace: reset currently held node (first click and hold, then
+    %             backspace to delete)
+    %  pageup: Set the selectedNode to the first node
+    %  tab: shift the selected node by 1
+    %  shift+tab: shift the selected node by -1
+    %  h: print help messages for all Animators
+    %  shift+s: Save the data to a .mat file
+    % 
+    %    Label3D Properties:
+    %    cameraParams - Camera Parameters for all cameras
+    %    cameraPoses - Camera poses for all cameras
+    %    orientations - Orientations of all cameras
+    %    locations - Locations of all cameras
+    %    camPoints - Positions of all points in camera coordinates
+    %    points3D - Positions of all points in world XYZ coordinates
+    %    status - Logical matrix denoting whether a node has been modified
+    %    selectedNode - Currently selected node for click updating
+    %    skeleton - Struct denoting directed graph
+    %    ImageSize - Size of the images
+    %    nMarkers - Number of markers
+    %    nCams - Number of Cameras
+    %    jointsPanel - Handle to keypoint panel
+    %    jointsControl - Handle to keypoint controller
+    %    savePath - Path in which to save data.
+    %    h - Cell array of Animator handles.
+    %    frameInds - Indices of current subset of frames
+    %    frame - Current frame number within subset
+    %    frameRate - current frame rate
+    %    undistortedImages - If true, treat input images as undistorted
+    %                        (Default false)
+    %    savePath - Path in which to save output. The output files are of
+    %               the form
+    %               path = sprintf('%s%sCamera_%d.mat', obj.savePath, ...
+    %                        datestr(now, 'yyyy_mm_dd_HH_MM_SS'), nCam);
+    %    verbose - Print saving messages
+    % 
+    %    Label3D Methods:
+    %    Label3D - constructor
+    %    loadcamParams - Load in camera parameters
+    %    getCameraPoses - Return table of camera poses
+    %    zoomOut - Zoom all images out to full size
+    %    getLabeledJoints - Return the indices of labeled joints and
+    %        corresponding cameras in a frame.
+    %    triangulateLabeledPoints - Return xyz positions of labeled joints.
+    %    reprojectPoints - reproject points from world coordinates to the
+    %        camera reference frames
+    %    resetFrame - reset all labels to the initial positions within a
+    %        frame.
+    %    clickImage - Assign the position of the selected node with the
+    %        position of a mouse click.
+    %    getPointTrack - Helper function to return pointTrack object for
+    %        current frame.
+    %    plotCameras - Plot the positions and orientations of all cameras in
+    %        world coordinates.
+    %    checkStatus - Check whether points have been moved and update
+    %        accordingly
+    %    keyPressCallback - handle UI
+    %    saveState - save the current labeled data to a mat file.
+    %    selectNode - Modify the current selected node.
+    % 
+    %    Written by Diego Aldarondo (2019)
+    %    Some code adapted from https://github.com/talmo/leap
     properties (Access = private)
         % color %UNUSED
         % joints %UNUSED
@@ -171,7 +171,7 @@ classdef Label3D < Animator
         % ===========================
         % Useful Inherited properties
         % ===========================
-        % parent: current figure (from `gcf`)
+        % Parent: current figure (from `gcf`)
         % frame: frame number of animation (NOT indexed by frameInds)
         % frameInds: frame index mapping (usually f(x) = x, i.e. identity fn)
     end
@@ -241,9 +241,9 @@ classdef Label3D < Animator
         end
         
         function buildFromScratch(obj, camParams, videos, skeleton, varargin)
-            %buildFromScratch - Helper for Label3D constructor class.
+            % buildFromScratch - Helper for Label3D constructor class.
             %
-            %Inputs:
+            % Inputs:
             %   camParams: Cell array of structures denoting camera
             %              parameters for each camera.
             %           Structure has five fields:
@@ -457,10 +457,6 @@ classdef Label3D < Animator
             end
         end
         
-        %         function linkAnimators(obj)
-        %             Animator.linkAll(animators)
-        %         end
-        
         function [c, orientations, locations] = loadcamParams(obj, camParams)
             % LOADCAMPARAMS - Helper to load in camera params into cameraParameters objects
             %  and save the world positions.
@@ -494,10 +490,10 @@ classdef Label3D < Animator
         end
         
         function cameraPoses = getCameraPoses(obj)
-            %GETCAMERAPOSES - Helper function to store the camera poses
-            %for triangulation
+            % GETCAMERAPOSES - Helper function to store the camera poses
+            % for triangulation
             %
-            %See also: LOADCAMPARAMS
+            % See also: LOADCAMPARAMS
             varNames = {'ViewId', 'Orientation', 'Location'};
             cameraPoses = [arr2cell(uint32((1 : obj.nCams)))' ...
                 obj.orientations obj.locations];
@@ -512,9 +508,9 @@ classdef Label3D < Animator
         end
         
         function zoomOut(obj)
-            %ZOOMOUT - Zoom all images out to their maximum sizes.
+            % ZOOMOUT - Zoom all images out to their maximum sizes.
             %
-            %See also: TRIANGULATEVIEW
+            % See also: TRIANGULATEVIEW
             for i = 1 : obj.nCams
                 xlim(obj.h{obj.nCams + i}.Axes, [1 obj.ImageSize(i, 2)])
                 ylim(obj.h{obj.nCams + i}.Axes, [1 obj.ImageSize(i, 1)])
@@ -522,12 +518,12 @@ classdef Label3D < Animator
         end
         
         function triangulateView(obj)
-            %TRIANGULATEVIEW - Triangulate labeled points and zoom all
-            %images around those points.
+            % TRIANGULATEVIEW - Triangulate labeled points and zoom all
+            % images around those points.
             %
-            %Syntax: obj.triangulateView()
+            % Syntax: obj.triangulateView()
             %
-            %See also: ZOOMOUT
+            % See also: ZOOMOUT
             
             % Make sure there is at least one triangulated point
             frame = obj.frame;

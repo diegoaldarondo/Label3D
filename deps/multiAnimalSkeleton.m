@@ -1,6 +1,6 @@
 function newSkeleton = multiAnimalSkeleton(baseSkeleton, nAnimals)
     % duplicate an animal skeleton n times e.g. for multi-animal labeling
-    % Also assigns a unique marker color to each skeleton
+    % Also assigns a unique marker color to each skeleton (skeleton.marker_color)
 
     % E.g. usage: 
     % rat23 = load('skeletons/rat23')
