@@ -1,20 +1,20 @@
 function frames = loadFramesFromFolder(folder, frameIds, maxFrame, varargin)
     p = inputParser;
-    addParameter(p,'greyScale',false);
+    addParameter(p, 'greyScale', false);
     parse(p, varargin{:});
     p = p.Results;
     
     [frameIds, frameI] = sort(frameIds);
     videos = dir(fullfile(folder, '*.mp4'));
-    videoFrames = zeros(numel(videos),1);
+    videoFrames = zeros(numel(videos), 1);
     for i = 1:numel(videos)
-        [~,name,~] = fileparts(videos(i).name);
+        [~, name, ~] = fileparts(videos(i).name);
         videoFrames(i) = str2double(name);
     end
     [videoFrames, I] = sort(videoFrames);
     videos = videos(I);
     nVideos = numel(videos);
-    frames = cell(nVideos,1);
+    frames = cell(nVideos, 1);
     
     
     for nVid = 1:nVideos

@@ -1,6 +1,6 @@
 %% Example setup for Label3D
 % Label3D is a GUI for manual labeling of 3D keypoints in multiple cameras.
-% 
+%
 % Its main features include:
 % 1. Simultaneous viewing of any number of camera views.
 % 2. Multiview triangulation of 3D keypoints.
@@ -8,7 +8,7 @@
 % 4. Zooming, panning, and other default Matlab gestures
 % 5. Integration with Animator classes.
 % 6. Support for editing prelabeled data.
-% 
+%
 % Instructions:
 % right: move forward one frameRate
 % left: move backward one frameRate
@@ -40,8 +40,19 @@ addpath(genpath('skeletons'));
 % Path to the DANNCE project folder
 % This folder should contain at least the following folders: "videos", "calibration"
 projectFolder = '~/olveczky/dannce_data/example_dannce_project_folder';
+
 % number of frames to label from each video. Suggested 100-200.
 nFramesToLabel = 10;
+
+% skeleton file to load (expected in ./skeletons directory)
+skeletonFile = 'rat23.mat';
+
+% number of animals: will create a skeleton with multiple animals
+nAnimals = 1;
+
+% Recommended: keep this enabled UNLESS you do not have matlab licesnse for 
+% the Parallel Processing Toolbox. Speeds up loading frames ~2x if enabled.
+useParallel = true;
 
 
 %% Locate file paths and set up environment
@@ -53,9 +64,17 @@ videoPaths = collectVideoPaths(projectFolder, videoName);
 
 % create label folder if does not exist
 labelingFolder = fullfile(projectFolder, "labeling");
-warnState = warning('off','MATLAB:MKDIR:DirectoryExists');
+warnState = warning('off', 'MATLAB:MKDIR:DirectoryExists');
 mkdir(labelingFolder)
 warning(warnState)
+
+% Load the skeleton
+skeleton = load(fullfile('skeletons', skeletonFile));
+
+% Optionally dupilcate skeleton for > 1 animals:
+if nAnimals > 1
+    skeleton = multiAnimalSkeleton(skeleton, nAnimals);
+end
 
 %% Load video frames into memory (slow)
 
@@ -89,17 +108,19 @@ videos = cell(nVideos, 1);
 
 tic;
 
-delete(gcp('nocreate')); % make sure no parallel pool is currently running
-parpool("Threads"); % create parallel pool for loading video frames
-% threads is much faster to load than processes
+if useParallel
+    delete(gcp('nocreate')); % make sure no parallel pool is currently running
+    parpool("Threads"); % create parallel pool for loading video frames
+    % threads is much faster to start up than processes
+end
 
 parfor videoIdx = 1 : nVideos
     fprintf("Started video #%d\n", videoIdx);
     thisPath = videoPaths{videoIdx};
     vr = VideoReader(thisPath);
-
+    
     dest = zeros(videoHeight, videoWidth, 3, nFramesToLabel, 'uint8');
-
+    
     % Iterate over all framesToLabel
     for frameIdx = 1 : nFramesToLabel
         frameNumber = framesToLabel(frameIdx);
@@ -109,23 +130,23 @@ parfor videoIdx = 1 : nVideos
         if mod(frameIdx, 20) == 0
             fprintf("\tloaded frame #%d of %d. Vid #%d of %d.\n", ...
                 frameIdx, nFramesToLabel, videoIdx, nVideos );
-        end  
+        end
     end
-
+    
     videos{videoIdx} = dest;
-
+    
     fprintf("Finished video #%d\n", videoIdx);
 end
 
-delete(gcp('nocreate')); % release parallel resources
+if useParallel
+    delete(gcp('nocreate')); % release parallel resources
+end
 
 sEllapsed = toc;
 
 fprintf("Loaded %d frames in %.2f seconds (%.2f fps)\n\n", ...
     nTotalFrames, sEllapsed, nTotalFrames/sEllapsed);
 
-%% Load the skeleton
-skeleton = load('skeletons/rat23.mat');
 
 %% Start Label3D
 close all;
@@ -134,7 +155,7 @@ labelGui = Label3D(calibrationParams, videos, skeleton, ...
     'savePath', labelingFolder);
 
 %% Check the camera positions
-% labelGui.plotCameras       
+% labelGui.plotCameras
 
 %% If you just wish to view labels, use View 3D
 % close all

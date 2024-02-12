@@ -1,0 +1,168 @@
+-------------------
+Label3D (Animator)
+------------------
+-origNFrames: Integer
+-initialMarkers: Array
+-isKP3Dplotted: Boolean
+-gridColor: Array
+-mainFigureColor: Array
+-labelPosition: Array
+-tablePosition: Array
+-instructions: String
+-statusMsg: String
+-hiddenAxesPos: Array
+-isLabeled: Integer
+-isInitialized: Integer
+-counter: Text Object
+-sessionDatestr: String
+-autosave: Boolean
+-clipboard: Object
+-origCamParams: Cell Array of Structures
+-cameraParams: Cell Array of Camera Parameters Objects
+-orientations: Cell Array of Matrices
+-locations: Cell Array of Vectors
+-cameraPoses: Table
+-markers: Cell Array of 3D Arrays. Shape: (#frames, 2, #markers) for each cell
+-camPoints: 4D Array. Shape: (#markers, #cams, 2, #frames)
+-handLabeled2D: 4D Array. Shape: (#markers, #cams, 2, #frames)
+-points3D: 3D Array. Shape: (#markers, 3, #frames)
+-status: 3D Array. Shape: (#markers, #cameras, #frames)
+-selectedNode: Integer
+-skeleton: Structure
+-ImageSize: 2D Array. Shape: (#cams, 2)
+-nMarkers: Integer
+-nCams: Integer
+-jointsPanel: Panel Handle
+-jointsControl: UIControl Handle
+-savePath: String
+-kp3a: Keypoint3DAnimator Object
+-statusAnimator: Animator Object
+-h: Cell Array of Animator Objects
+-verbose: Boolean
+-undistortedImages: Boolean
+-sync: Object
+-framesToLabel: 1D Array. Shape: (1, #frames)
+-videoPositions: 2D Array. Shape: (#cams, 4)
+-defScale: Double
+-pctScale: Double
+-DragPointColor: Array
+-visibleDragPoints: Boolean
+
++Label3D(camParams, videos, skeleton, varargin)
++buildFromScratch(camParams, videos, skeleton, varargin)
++positionFromNRows(views, nRows): Array
++getPositions(nViews): Array
++loadcamParams(camParams): Tuple
++getCameraPoses(): Table
++zoomOut()
++getLabeledJoints(frame): Tuple
++triangulateLabeledPoints(frame): Array
++reprojectPoints(frame)
++resetFrame()
++clickImage(~, ~)
++getPointTrack(frame, jointId, camIds): pointTrack Object
++plotCameras()
++checkStatus()
++keyPressCallback(source, eventdata)
++saveState()
++selectNode(val)
++saveAll()
++getAnimators(): Cell Array of Animator Objects
++loadFrom3D(pts3d)
++loadState(varargin)
++exportDannce(varargin)
++checkForClickedNodes()
++deleteSelectedNode()
++setupKeypoint3dAnimator()
++remove3dPlot()
++add3dPlot()
++checkStatusAnimator()
++reset(obj)
++loadMerge(files, varargin)
++loadFromState(file, videos, varargin)
++loadAll(path, varargin)
++load(varargin)
+
+#update
+
+--------------------
+Animator (FlexChart)
+--------------------
+-nFrames: Integer
+-frameInds: Array
+-frameRate: Integer
+-frame: Integer
+-id: Integer
+-isVisible: Boolean
+-scope: Integer
+-links: Array
+-speedUp: Integer
+-slowDown: Integer
+-ctrlSpeed: Integer
+-shiftSpeed: Integer
+
++Animator(varargin)
++delete()
++getAxes(): Axes
++get.frame(): Integer
++set.frame(newFrame)
++get.frameRate(): Integer
++set.frameRate(newframeRate)
++getFrameInds(): Array
++restrict(newFrames)
++keyPressCallback(source, eventdata)
++checkVisible()
++linkAll(h)
++runAll(h, src, event)
++update()
+
+#update() <ABSTRACT>
+
+
+
+--------------------------------------
+DraggableKeypoint2DAnimator (Animator)
+--------------------------------------
+-MarkerSize: Integer
+-DragPointColor: Array
+-LineWidth: Integer
+-markers: 3D Array. Shape: (#frames, 2, #markers)
+-markersX: 3D Array. Shape: (#frames, 1, #markers)
+-markersY: 3D Array. Shape: (#frames, 1, #markers)
+-skeleton: Structure
+-PlotSegments: Array of Line Objects
+-points: Line Object
+-selectedNode: Integer
+-selectedNodePosition: Array
+-dragged: 2D Array. Shape: (#frames, #markers)
+-visibleDragPoints: Boolean
+
++DraggableKeypoint2DAnimator(markers, skeleton, varargin)
++restrict(newFrames)
++getCurrentFramePositions(): Array
++dragpoints(ax, x, y, varargin): Line Object
++resetFrame()
++keyPressCallback(source, eventdata)
++deleteSelectedNode()
++getSelectedNode(src): Integer
++handleClick(src, ev)
++handleDrag(fig, ev, srcLine)
++cleanupDrag(fig, ev)
++reset(obj)
+
+#update()
+
+
+
+-----------------------
+VideoAnimator (Animator)
+------------------------
+-V: 4D Array. Shape: (img_height, img_width, 3, #frames)
+-img: Image Object
+-clim: Array
+
++VideoAnimator(V, varargin)
++restrict(newFrames)
++keyPressCallback(source, eventdata)
+
+#update()

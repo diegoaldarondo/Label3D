@@ -5,7 +5,7 @@ function paths = collectCalibrationPaths(basePath, varargin)
     else
         fn = dir(fullfile(basePath, 'calibration', '*_params.mat')); 
     end
-    paths = cell(numel(fn),1);
+    paths = cell(numel(fn), 1);
     for nFile = 1:numel(fn)
         paths{nFile} = fullfile(fn(nFile).folder, fn(nFile).name);
     end

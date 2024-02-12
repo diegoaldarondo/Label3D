@@ -35,3 +35,9 @@ codegen/
 
 # Octave session info
 octave-workspace
+
+#vscode local settings
+.vscode
+
+# label3d save data files (maybe remove from gitignore if we change the default)
+/*_Label3d.mat

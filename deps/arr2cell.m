@@ -12,7 +12,7 @@ if nargin < 2; dim = ndims(X); end
 dims = setdiff(1:ndims(X), dim);
 
 % Convert to cell and squeeze
-C = squeeze(num2cell(X,dims));
+C = squeeze(num2cell(X, dims));
 
 end
 

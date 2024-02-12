@@ -14,7 +14,7 @@ calibration = dir(fullfile(baseDir, 'calibration', '*.mat'));
 
 p = inputParser;
 defaultOrder = 1:numel(sync);
-validOrder = @(X) isnumeric(X) && (sum(mod(X,1)) == 0);
+validOrder = @(X) isnumeric(X) && (sum(mod(X, 1)) == 0);
 addParameter(p, 'order', defaultOrder, validOrder)
 parse(p, varargin{:})
 p = p.Results;
@@ -23,4 +23,4 @@ sync = arrayfun(@(X) {load(fullfile(X.folder, X.name))}, sync(p.order));
 labelData = arrayfun(@(X) {load(fullfile(X.folder, X.name))}, labeling(p.order));
 params = arrayfun(@(X) {load(fullfile(X.folder, X.name))}, calibration(p.order));
 path = fullfile(baseDir, 'label3d_dannce.mat');
-save(path, 'sync','labelData','params')
+save(path, 'sync', 'labelData', 'params')
