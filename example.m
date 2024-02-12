@@ -45,7 +45,10 @@ projectFolder = '~/olveczky/dannce_data/example_dannce_project_folder';
 nFramesToLabel = 10;
 
 % skeleton file to load (expected in ./skeletons directory)
-skeletonFile = 'rat23.mat' ;
+skeletonFile = 'rat23.mat';
+
+% number of animals: will create a skeleton with multiple animals
+nAnimals = 1;
 
 % Recommended: keep this enabled UNLESS you do not have matlab licesnse for 
 % the Parallel Processing Toolbox. Speeds up loading frames ~2x if enabled.
@@ -67,6 +70,11 @@ warning(warnState)
 
 % Load the skeleton
 skeleton = load(fullfile('skeletons', skeletonFile));
+
+% Optionally dupilcate skeleton for > 1 animals:
+if nAnimals > 1
+    skeleton = multiAnimalSkeleton(skeleton, nAnimals);
+end
 
 %% Load video frames into memory (slow)
 
