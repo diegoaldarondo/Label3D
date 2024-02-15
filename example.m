@@ -206,7 +206,7 @@ if enableVideoCache && ~usedCache
         disp('May take a few seconds...\n')
         cacheTime=datetime("now");
         save(frameCacheFilePath, "videos", "framesToLabel",  ...
-            "videoPaths", "videoWidth","videoHeight", "cacheTime")
+            "videoPaths", "videoWidth","videoHeight", "cacheTime", "-v7.3")
     end
 end
 
