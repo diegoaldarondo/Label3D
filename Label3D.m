@@ -451,9 +451,16 @@ classdef Label3D < Animator
             if ~isempty(obj.framesToLabel) && ~isempty(obj.sync)
                 sync = obj.sync;
                 framesToLabel = obj.framesToLabel;
-                save(path, 'videos', 'camParams', 'handLabeled2D', 'skeleton', 'data_3D', 'status', 'sync', 'framesToLabel', 'savePath', '-v7.3')
+                save(path, 'videos', 'camParams', 'handLabeled2D', 'skeleton', 'data_3D', 'status', ...
+                    'sync', 'framesToLabel', ...
+                    'savePath', '-v7.3')
+            elseif ~isempty(obj.framesToLabel)
+                framesToLabel = obj.framesToLabel;
+                save(path, 'videos', 'camParams', 'handLabeled2D', 'skeleton', 'data_3D', 'status', ...
+                    'framesToLabel', 'savePath', '-v7.3')
             else
-                save(path, 'videos', 'camParams', 'handLabeled2D', 'skeleton', 'data_3D', 'status', 'savePath', '-v7.3')
+                save(path, 'videos', 'camParams', 'handLabeled2D', 'skeleton', 'data_3D', 'status', ...
+                    'savePath', '-v7.3')
             end
         end
         
@@ -1092,8 +1099,10 @@ classdef Label3D < Animator
             obj.loadFrom3D(data.data_3D)
             obj.handLabeled2D = data.handLabeled2D;
             obj.status = data.status;
-            if isfield(data, 'framesToLabel') && isfield(data, 'sync')
+            if isfield(data, 'sync')
                 obj.sync = data.sync;
+            end
+            if isfield(data, 'framesToLabel')
                 obj.framesToLabel = data.framesToLabel;
             end
             obj.update()
@@ -1117,7 +1126,6 @@ classdef Label3D < Animator
             %             be undistorted.
             %   data_3D - Points in world coordinates.
             % Include some metadata
-            disp('saving')
             status = obj.status;
             skeleton = obj.skeleton;
             imageSize = obj.ImageSize;
@@ -1137,13 +1145,24 @@ classdef Label3D < Animator
             camParams = obj.origCamParams;
             path = sprintf('%s.mat', obj.savePath);
             handLabeled2D = obj.handLabeled2D;
+            % save framesToLabel & sync & rest
             if ~isempty(obj.framesToLabel) && ~isempty(obj.sync)
+                disp('saving with framesToLabel & sync')
                 sync = obj.sync;
                 framesToLabel = obj.framesToLabel;
                 save(path, 'data_3D', 'status', ...
                     'skeleton', 'imageSize', 'handLabeled2D', 'cameraPoses', 'camParams', ...
                     'sync', 'framesToLabel')
+            % save framesToLabel & rest
+            elseif ~isempty(obj.framesToLabel)
+                disp('saving with framesToLabel')
+                framesToLabel = obj.framesToLabel;
+                save(path, 'data_3D', 'status', ...
+                    'skeleton', 'imageSize', 'handLabeled2D', 'cameraPoses', 'camParams', ...
+                    'framesToLabel')
+            % just save rest
             else
+                disp('saving')
                 save(path, 'data_3D', 'status', ...
                     'skeleton', 'imageSize', 'handLabeled2D', 'cameraPoses', 'camParams')
             end
@@ -1398,8 +1417,10 @@ classdef Label3D < Animator
             skel = data.skeleton;
             obj.buildFromScratch(camParams, videos, skel, varargin{:});
             obj.loadState(file)
-            if isfield(data, 'framesToLabel') && isfield(data, 'sync')
+            if isfield(data, 'sync')
                 obj.sync = data.sync;
+            end
+            if isfield(data, 'framesToLabel')
                 obj.framesToLabel = data.framesToLabel;
             end
         end
@@ -1408,8 +1429,10 @@ classdef Label3D < Animator
             data = load(path);
             obj.buildFromScratch(data.camParams, data.videos, data.skeleton, varargin{:});
             obj.loadFrom3D(data.data_3D);
-            if isfield(data, 'framesToLabel') && isfield(data, 'sync')
+            if isfield(data, 'sync')
                 obj.sync = data.sync;
+            end
+            if isfield(data, 'framesToLabel')
                 obj.framesToLabel = data.framesToLabel;
             end
             obj.status = data.status;
