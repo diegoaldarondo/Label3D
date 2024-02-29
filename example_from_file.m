@@ -9,9 +9,9 @@ addpath(genpath('skeletons'));
 
 % Path to the DANNCE project folder
 % This folder should contain at least the following folders: "videos", "calibration"
-projectFolder = '~/olveczky/dannce_data/example_dannce_project_folder';
-labelDataFilename = '20240205_150914_Label3D';
-frameCacheFilename = 'frameCache_f12.mat';
+projectFolder = '~/olveczky/dannce_data/photometry.alone.day2/240117_152521_F7';
+labelDataFilename = '20240214_133836_Label3D_COMs.mat';
+frameCacheFilename = 'frameCache_f100.mat';
 
 labelingFolder = fullfile(projectFolder, "labeling");
 
@@ -27,6 +27,9 @@ labelDataFileInfo = who ('-file', labelDataFilePath);
 tmp = load(frameCacheFilePath, "framesToLabel");
 frameCacheFramesToLabel = tmp.framesToLabel;
 
+% relace this with loaded value
+framesToLabel = 0;
+
 if ismember('framesToLabel', labelDataFileInfo)
     tmp = load(labelDataFilePath, "framesToLabel");
     labelDataFramesToLabel = tmp.framesToLabel;
@@ -35,6 +38,7 @@ if ismember('framesToLabel', labelDataFileInfo)
     if isequaln(labelDataFramesToLabel, frameCacheFramesToLabel)
         disp("Frame cache appears to be accurate. Loading cached data ..." + ...
             " may take a few seconds")
+        framesToLabel=labelDataFramesToLabel;
     else
         disp("Frame cache frameToLabel not equal to labelData frameToLabel." + ...
             " Try a different " + ...
@@ -58,6 +62,7 @@ else
         disp("Evenly spaced frames appears to match cache frame numbers." + ...
             " Loading cached data ..." + ...
             " may take a few seconds")
+        framesToLabel = maybeFramesToLabel;
     else
         disp("Evenly spaced frames is not accurate. Try creating a " + ...
             "framesToLabel array in the labelData file with the same list " + ...
@@ -78,4 +83,4 @@ videos = frameCacheData.videos;
 
 close all;
 fprintf("Launching Label3D. May take a few seconds...\n")
-labelGui = Label3D(labelDataFilePath, videos, 'savePath', labelingFolder);
+labelGui = Label3D(labelDataFilePath, videos, 'savePath', labelingFolder,'framesToLabel', framesToLabel);
