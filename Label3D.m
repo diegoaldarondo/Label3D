@@ -1252,6 +1252,7 @@ classdef Label3D < Animator
             %         labelGui.exportDannce('cameraNames', cameraNames)
             %         labelGui.exportDannce('framesToLabel', framesToLabel)
             %         labelGui.exportDannce('saveFolder', saveFolder)
+
             defaultBasePath = '';
             defaultCameraNames = cell(1, obj.nCams);
             for i = 1 : numel(defaultCameraNames)
@@ -1267,6 +1268,8 @@ classdef Label3D < Animator
             addParameter(p, 'cameraNames', defaultCameraNames, validCameraNames);
             addParameter(p, 'framesToLabel', defaultFramesToLabel, validFrames);
             addParameter(p, 'saveFolder', defaultSaveFolder, validBasePath);
+            addParameter(p, 'totalFrames', -1);
+
             
             parse(p, varargin{:});
             p = p.Results;
@@ -1277,6 +1280,15 @@ classdef Label3D < Animator
                     'labelGui.exportDannce(''''framesToLabel'''', framesToLabel)'])
             end
             
+            if p.totalFrames == -1
+                error(['totalFrames must be provided. This is the total number' ...
+                    'of frames in the video to generate a sync variable.' ...
+                    'Not just the number of frames being labeled' ...
+                    'E.g. 90000'])
+            end
+            totalFrames = p.totalFrames;
+
+
             % Load the matched frames files if necessary
             if isempty(obj.sync)
                 if isempty(p.basePath)
@@ -1285,6 +1297,24 @@ classdef Label3D < Animator
                 obj.sync = collectSyncPaths(p.basePath);
                 obj.sync = cellfun(@(X) {load(X)}, obj.sync);
             end
+
+            nKeyPoints = size(obj.points3D, 1);
+            
+            % if loading sync did not work, then create your own sync
+            % assuming frames are already synchronized
+            if isempty(obj.sync) || isempty(obj.sync{1})
+                % For each labels file, extract the labeled points and save metadata.
+                nCameras = obj.nCams;
+                obj.sync = cell(nCameras, 1);
+                for i = 1: nCameras
+                    obj.sync{i}.data_2d = zeros(totalFrames, nKeyPoints*2);
+                    obj.sync{i}.data_3d = zeros(totalFrames, nKeyPoints*3);
+                    obj.sync{i}.data_frame = (0:(totalFrames - 1));
+                    obj.sync{i}.data_sampleID = (0:(totalFrames - 1));
+                end
+            end
+
+
             
             % Setup the save folder
             if isempty(p.saveFolder)
@@ -1297,10 +1327,7 @@ classdef Label3D < Animator
             obj.saveState();
             p.file = obj.savePath;
             labels = load(p.file);
-            
-            
-            % For each labels file, extract the labeled points and save metadata.
-            nCameras = numel(obj.sync);
+
             labelData = cell(nCameras, 1);
             for nCam = 1 : nCameras
                 % Find corresponding sampleIds
