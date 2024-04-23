@@ -39,13 +39,13 @@ addpath(genpath('skeletons'));
 %% Configuration variables -- SET THESE BEFORE RUNNING
 % Path to the DANNCE project folder
 % This folder should contain at least the following folders: "videos", "calibration"
-projectFolder = "~/olveczky/dannce_data/example_dannce_project_folder";
+projectFolder = 'C:\data\F5-F7_openfield_photometry\alone\day1\240116_151948_F7';
 
 % number of frames to label from each video. Suggested 100-200.
-nFramesToLabel = 10;
+nFramesToLabel = 75;
 
 % skeleton file to load (expected in ./skeletons directory)
-skeletonFile = "rat23";
+skeletonFile = "rat23.mat";
 
 % number of animals: will create a skeleton with multiple animals
 nAnimals = 1;
@@ -206,7 +206,8 @@ if enableVideoCache && ~usedCache
         disp('May take a few seconds...\n')
         cacheTime=datetime("now");
         save(frameCacheFilePath, "videos", "framesToLabel",  ...
-            "videoPaths", "videoWidth","videoHeight", "cacheTime", "-v7.3")
+            "videoPaths", "videoWidth","videoHeight", "nFramesWholeVideo", ...
+            "cacheTime", "-v7.3")
     end
 end
 
