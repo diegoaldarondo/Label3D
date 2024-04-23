@@ -132,7 +132,6 @@ classdef Label3D < Animator
         isLabeled = 2 % enum in status matrix representing labeled (by hand or computed)
         isInitialized = 1 % enum in status matrix representing initially provided points
         counter % text object: total # of labeled frames
-        sessionDatestr % date string during load: used to set save file name
     end
     
     properties (Access = public)
@@ -168,6 +167,8 @@ classdef Label3D < Animator
         pctScale = 0.2 % scale images by this fraction
         DragPointColor = [1, 1, 1]; % passed to DraggableKeypoint2DAnimator constructor
         visibleDragPoints = true; %p assed to DraggableKeypoint2DAnimator constructor
+        sessionDatestr % date string during load: used to set save file name
+
         % ===========================
         % Useful Inherited properties
         % ===========================
@@ -1247,12 +1248,13 @@ classdef Label3D < Animator
             % cameraNames - cell array of camera names (in order)
             %   Default: {'Camera1', 'Camera2', etc.}
             % framesToLabel - Vector of frame numbers for each video frame.
+            % makeSync - if true, create the sync struct (e.g. frame_data, etc.)
             % Syntax: labelGui.exportDannce
             %         labelGui.exportDannce('basePath', path)
             %         labelGui.exportDannce('cameraNames', cameraNames)
             %         labelGui.exportDannce('framesToLabel', framesToLabel)
             %         labelGui.exportDannce('saveFolder', saveFolder)
-
+            % obj.nCams = 6;
             defaultBasePath = '';
             defaultCameraNames = cell(1, obj.nCams);
             for i = 1 : numel(defaultCameraNames)
@@ -1269,6 +1271,8 @@ classdef Label3D < Animator
             addParameter(p, 'framesToLabel', defaultFramesToLabel, validFrames);
             addParameter(p, 'saveFolder', defaultSaveFolder, validBasePath);
             addParameter(p, 'totalFrames', -1);
+            addParameter(p, 'makeSync', false);
+            addParameter(p, 'saveFilename', "");
 
             
             parse(p, varargin{:});
@@ -1288,7 +1292,7 @@ classdef Label3D < Animator
             end
             totalFrames = p.totalFrames;
 
-
+ 
             % Load the matched frames files if necessary
             if isempty(obj.sync)
                 if isempty(p.basePath)
@@ -1300,11 +1304,11 @@ classdef Label3D < Animator
 
             nKeyPoints = size(obj.points3D, 1);
             
+            nCameras = obj.nCams;
             % if loading sync did not work, then create your own sync
             % assuming frames are already synchronized
-            if isempty(obj.sync) || isempty(obj.sync{1})
+            if p.makeSync
                 % For each labels file, extract the labeled points and save metadata.
-                nCameras = obj.nCams;
                 obj.sync = cell(nCameras, 1);
                 for i = 1: nCameras
                     obj.sync{i}.data_2d = zeros(totalFrames, nKeyPoints*2);
@@ -1312,8 +1316,9 @@ classdef Label3D < Animator
                     obj.sync{i}.data_frame = (0:(totalFrames - 1));
                     obj.sync{i}.data_sampleID = (0:(totalFrames - 1));
                 end
+            else
+                disp("makeSync not specified. Sync array could be missing")
             end
-
 
             
             % Setup the save folder
@@ -1327,6 +1332,7 @@ classdef Label3D < Animator
             obj.saveState();
             p.file = obj.savePath;
             labels = load(p.file);
+
 
             labelData = cell(nCameras, 1);
             for nCam = 1 : nCameras
@@ -1363,7 +1369,13 @@ classdef Label3D < Animator
                     'data_frame', data_frame, ...
                     'data_sampleID', data_sampleID);
             end
-            outPath = fullfile(outDir, sprintf('%sLabel3D_dannce.mat', obj.sessionDatestr));
+
+            saveFilename = p.saveFilename;
+            if isempty(saveFilename)
+                saveFilename = sprintf('%sLabel3D_dannce.mat', obj.sessionDatestr);
+            end
+            
+            outPath = fullfile(outDir, saveFilename);
             params = obj.origCamParams;
             camnames = p.cameraNames;
             handLabeled2D = obj.handLabeled2D;
