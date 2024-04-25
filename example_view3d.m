@@ -40,7 +40,7 @@ addpath(genpath('skeletons'));
 % Path to the DANNCE project folder
 % This folder should contain at least the following folders: "videos", "calibration"
 projectFolder = '/Users/caxon/olveczky/dannce_data/240116_151948_F7';
-dannceOutputDataFile = '/Users/caxon/olveczky/dannce_data/240116_151948_F7/save_data_AVG0.mat';
+dannceOutputDataFile = '/Users/caxon/Downloads/save_data_AVG0.mat';
 
 % % number of frames to label from each video. Suggested 100-200.
 nFramesToLoad = 500;
@@ -152,7 +152,14 @@ fprintf("Loaded %d frames in %.2f seconds (%.2f fps)\n\n", ...
 
 viewGui = View3D(calibrationParams, videos, skeleton);
 
-dannce_output_data=load(dannceOutputDataFile);
+dannce_output_data=load(dannceOutputDataFile, 'pred');
+pred = dannce_output_data.pred;
+nFramesPred= size(pred, 1);
 
-pts3d = reshape(dannce_output_data.pred, nFramesToLoad, 3, 23);
+if nFramesToLoad > nFramesPred
+    throw("# of frames to load (nFramesToLoad) must be <= # of frames predicted")
+end
+
+pred = pred(framesToLoad, :, :, :);
+pts3d = reshape(pred, nFramesToLoad, 3, 23);
 viewGui.loadFrom3D(pts3d)
