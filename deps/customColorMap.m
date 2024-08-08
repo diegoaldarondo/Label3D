@@ -6,8 +6,8 @@ function colors = customColorMap(n)
         return
     end
 
-    % Red Blue Green Yellow Purple Cyan ... then lines() colormap
-    definedColors = [ 1 0 0 ; 0 0 1 ; 0 1 0 ; 1 1 0 ; 1 0 1 ;  0 1 1 ];
+    % Red Cyan Green Yellow Purple Blue ... then lines() colormap
+    definedColors = [ 1 0 0 ; 0.25 1 1 ; 0 1 0 ; 1 1 0 ; 1 0 1 ;  0 1 0 ];
     nDefinedColors = size(definedColors, 1);
     if n <= nDefinedColors
         colors = definedColors(1:n, :);
