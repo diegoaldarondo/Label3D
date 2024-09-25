@@ -41,3 +41,5 @@ octave-workspace
 
 # label3d save data files (maybe remove from gitignore if we change the default)
 /*_Label3d.mat
+
+.DS_Store
