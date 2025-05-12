@@ -27,6 +27,8 @@ joints_idx = np.array([
     [2, 4],  # left_eye -> left_ear
     [1, 3],  # nose -> right_eye
     [3, 5],  # right_eye -> right_ear
+    [4, 6],  # left_ear -> left_shoulder
+    [5, 7],  # right_ear -> right_shoulder
     # Body group
     [6, 7],  # left_shoulder -> right_shoulder
     [12, 13], # left_hip -> right_hip
@@ -60,7 +62,7 @@ white  = [1, 1, 1]
 # Assign colors logically
 colors = np.array([
     # Head group (yellow)
-    yellow, yellow, yellow, yellow,
+    yellow, yellow, yellow, yellow, yellow, yellow,
     # Body group (white)
     white, white, white, white,
     # Left arm group (blue)

@@ -29,34 +29,34 @@ labelingCameraNames = {
     "Cam_001",
     "Cam_002",
     "Cam_003",
-    "Cam_004",
-    "Cam_007",
-    "Cam_008",
-    "Cam_009",
-    "Cam_010",
-    "Cam_011",
-    "Cam_012", 
-    "Cam_013",
-    "Cam_014",
-    "Cam_015",
-    "Cam_016",
-    "Cam_018",
-    "Cam_019",
-    "Cam_020",
-    "Cam_021",
-    "Cam_022",
-    "Cam_023",
-    "Cam_024",
-    "Cam_025",
-    "Cam_026",
-    "Cam_027",
-    "Cam_028"
+    % "Cam_004",
+    % "Cam_007",
+    % "Cam_008",
+    % "Cam_009",
+    % "Cam_010",
+    % "Cam_011",
+    % "Cam_012", 
+    % "Cam_013",
+    % "Cam_014",
+    % "Cam_015",
+    % "Cam_016",
+    % "Cam_018",
+    % "Cam_019",
+    % "Cam_020",
+    % "Cam_021",
+    % "Cam_022",
+    % "Cam_023",
+    % "Cam_024",
+    % "Cam_025",
+    % "Cam_026",
+    % "Cam_027",
+    % "Cam_028"
     };
 
 % --- Define which CAMERAS (from labelingCameraNames) to load poses for ---
 camerasToLoadPosesFor = {"Cam_001", "Cam_002", ...
-    "Cam_003", ...
-    "Cam_004", "Cam_007"
+    % "Cam_003", ...
+    % "Cam_004", "Cam_007"
     };
 numCameras = numel(labelingCameraNames);
 
@@ -636,6 +636,7 @@ else
             'cameraNames', labelingCameraNames, ...
             'camPrefixMap', camNameToPrefixMap, ...
             'undistortedImages', true, ...
+            'flipViewsVertically', true, ...
             'nAnimals', nAnimals);
 
         % --- Inject Precomputed 2D Poses (if enabled) ---
